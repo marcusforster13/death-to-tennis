@@ -51,11 +51,22 @@ console.warn = _warn;
   @media (max-width: 700px) {
     .desktop-sidebar { display:none!important; }
     .mobile-bottom-bar { display:flex!important; }
-    .game-layout { flex-direction:column!important; height:auto!important; overflow:visible!important; }
-    .main-board { min-height:calc(100vh - 120px)!important; padding-bottom:80px!important; }
+    .game-layout { flex-direction:column!important; height:calc(100vh - 54px)!important; overflow:hidden!important; }
+    .main-board { flex:1!important; overflow-y:auto!important; }
     .header-nav { display:none!important; }
     .mobile-tabs { display:flex!important; gap:4px; }
-    .header-mobile-pts { font-size:14px!important; }
+    /* Tiles shrink on mobile */
+    .tile-btn { width:44px!important; height:44px!important; }
+    .tile-btn img { width:26px!important; height:26px!important; }
+    .tile-btn span.checkmark { font-size:17px!important; }
+    .tile-btn span.dot { width:6px!important; height:6px!important; }
+    .row-label { width:42px!important; font-size:8px!important; }
+    .row-label .payout-val { font-size:9px!important; }
+    .active-bar { height:44px!important; }
+    .tile-gap { gap:5px!important; }
+    .row-gap { gap:7px!important; }
+    .death-box-tile { width:140px!important; height:44px!important; font-size:9px!important; }
+    .board-inner { padding:10px 10px 80px!important; }
   }
   .mobile-bottom-bar { display:none; position:fixed; bottom:0; left:0; right:0; background:#13151a; border-top:1px solid #2a2d36; z-index:45; padding:10px 16px; gap:12px; align-items:center; }
 </style>
@@ -230,15 +241,15 @@ function TileCell({tile, active, onClick}) {
         display:'flex', alignItems:'center', justifyContent:'center',
         boxShadow: bomb ? '0 0 20px rgba(204,0,0,0.6)' : safe ? '0 0 14px rgba(60,200,60,0.35)' : 'none',
         animation: bomb ? 'bombShake 0.45s ease' : safe ? 'safeReveal 0.25s ease' : 'none',
-        position:'relative', padding:0,
+        position:'relative', padding:0, flexShrink:0,
       }}
     >
       {bomb ? (
         <img src={SKULL_IMG} alt="💀" style={{width:36,height:36,objectFit:'contain',filter:'brightness(0) saturate(100%) invert(30%) sepia(90%) saturate(800%) hue-rotate(340deg) brightness(120%)'}}/>
       ) : safe ? (
-        <span style={{fontSize:22,color:'#5ddd5d',fontWeight:700,lineHeight:1}}>✓</span>
+        <span className="checkmark" style={{fontSize:22,color:'#5ddd5d',fontWeight:700,lineHeight:1}}>✓</span>
       ) : active ? (
-        <span style={{width:8,height:8,borderRadius:'50%',background:'#3e4455',display:'block'}}/>
+        <span className="dot" style={{width:8,height:8,borderRadius:'50%',background:'#3e4455',display:'block'}}/>
       ) : ''}
     </button>
   );
@@ -247,26 +258,26 @@ function TileCell({tile, active, onClick}) {
 // ─── ROW ──────────────────────────────────────────────────────────────────────
 function GameRow({row, onTileClick, rowNum, isDeathBox}) {
   return (
-    <div style={{
+    <div className="row-gap" style={{
       display:'flex', alignItems:'center', gap:10,
-      padding:'6px 0',
+      padding:'4px 0',
       opacity: row.isActive ? 1 : row.isCompleted ? 0.65 : 0.35,
       transition:'opacity 0.3s',
     }}>
       {/* Label */}
-      <div style={{width:58,textAlign:'right',flexShrink:0}}>
+      <div className="row-label" style={{width:58,textAlign:'right',flexShrink:0}}>
         {isDeathBox ? (
           <span style={{color:'#D4AF37',fontSize:9,fontWeight:700,letterSpacing:1,lineHeight:1.3}}>DEATH<br/>BOX</span>
         ) : (
           <>
             <div style={{fontSize:9,color:row.isActive?'#ff4444':'#9098aa',letterSpacing:1,fontWeight:700}}>ROW {rowNum}</div>
-            <div style={{fontSize:10,color:row.isActive?'#ffffff':'#6a7280',fontWeight:600}}>{row.payout}</div>
+            <div className="payout-val" style={{fontSize:10,color:row.isActive?'#ffffff':'#6a7280',fontWeight:600}}>{row.payout}</div>
           </>
         )}
       </div>
 
       {/* Active bar */}
-      <div style={{
+      <div className="active-bar" style={{
         width:3,height:58,borderRadius:2,flexShrink:0,
         background: row.isActive ? '#CC0000' : row.isCompleted ? '#3aaa3a' : '#2e3240',
         boxShadow: row.isActive ? '0 0 10px #CC0000' : 'none',
@@ -274,13 +285,13 @@ function GameRow({row, onTileClick, rowNum, isDeathBox}) {
       }}/>
 
       {/* Tiles or Death Box */}
-      <div style={{display:'flex',gap:7}}>
+      <div className="tile-gap" style={{display:'flex',gap:7,flexWrap:'nowrap'}}>
         {isDeathBox ? (
-          <div className={row.isCompleted ? 'death-box-glow' : ''} style={{
-            width:180,height:58,border:`2px solid ${row.isCompleted?'#D4AF37':'#222'}`,
+          <div className={`death-box-tile ${row.isCompleted ? 'death-box-glow' : ''}`} style={{
+            width:180,height:58,border:`2px solid ${row.isCompleted?'#D4AF37':'#2e3240'}`,
             borderRadius:5,background:row.isCompleted?'rgba(212,175,55,0.12)':'rgba(212,175,55,0.04)',
             display:'flex',alignItems:'center',justifyContent:'center',
-            color:row.isCompleted?'#D4AF37':'#333',fontSize:10,fontWeight:700,letterSpacing:2,
+            color:row.isCompleted?'#D4AF37':'#555',fontSize:10,fontWeight:700,letterSpacing:2,
           }}>
             ☠ DEATH BOX
           </div>
@@ -490,7 +501,7 @@ function App() {
             )}
 
             {run && (
-              <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',justifyContent:'flex-end',minHeight:'100%',padding:'16px 16px 20px'}}>
+              <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',justifyContent:'flex-end',minHeight:'100%',padding:'16px 16px 20px'}} className="board-inner">
 
                 {/* Status banner at top */}
                 {(isDead||isCashed) && (
