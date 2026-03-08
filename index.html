@@ -524,8 +524,8 @@ function App() {
             {run && (() => {
               // Calculate tile size so all 9 rows fit perfectly
               const actionBarH = window.innerWidth <= 700 ? 54 : 0;
-              const availH = (boardRef.current ? boardRef.current.clientHeight : window.innerHeight - 108) - actionBarH - (isDead||isCashed ? 44 : 0) - 16;
-              const sz = Math.floor(availH / 8);
+              const availH = (boardRef.current ? boardRef.current.clientHeight : window.innerHeight - 108) - actionBarH - (isDead||isCashed ? 44 : 0) - 32;
+              const sz = Math.min(Math.floor(availH / 8), 64);
               return (
                 <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',height:'100%',padding:'8px 12px',boxSizing:'border-box'}}>
                   {/* Status banner */}
