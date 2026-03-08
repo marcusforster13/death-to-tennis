@@ -72,14 +72,14 @@ console.warn = _warn;
 const { useState, useCallback, useEffect, useRef } = React;
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const PAYOUTS = [0, 120, 150, 190, 240, 320, 430, 600, 820];
+const PAYOUTS = [0, 120, 160, 220, 310, 430, 600, 820];
 const BASE_PTS = 100;
-const BOMB_MAP = {7:3,6:3,5:2,4:2,3:1,2:1};
+const BOMB_MAP = {5:2,4:2,3:1,2:1};
 const STORAGE_KEY = 'tfv_v1';
 
 const LEADERBOARD = [
-  {rank:1,name:'PHANTOM_X',points:48200,best:8,runs:312},
-  {rank:2,name:'REAPER99',points:37650,best:8,runs:241},
+  {rank:1,name:'PHANTOM_X',points:48200,best:7,runs:312},
+  {rank:2,name:'REAPER99',points:37650,best:7,runs:241},
   {rank:3,name:'V01D',points:29100,best:7,runs:198},
   {rank:4,name:'NOCTURNE',points:21800,best:7,runs:167},
   {rank:5,name:'GLITCH_',points:18400,best:6,runs:143},
@@ -179,7 +179,7 @@ function playSound(type) {
 
 // ─── ENGINE ───────────────────────────────────────────────────────────────────
 function randTileCount() {
-  return [2,3,4,5,6,6][Math.floor(Math.random()*6)];
+  return [2,3,3,4,4,5][Math.floor(Math.random()*6)];
 }
 
 function generateRow(rowIdx) {
@@ -198,7 +198,7 @@ function generateRow(rowIdx) {
 function generateRun() {
   return {
     id: Date.now().toString(),
-    rows: Array.from({length:8},(_,i)=>generateRow(i)),
+    rows: Array.from({length:7},(_,i)=>generateRow(i)),
     currentRow: 0,
     status: 'active',
     secured: BASE_PTS,
@@ -363,17 +363,17 @@ function App() {
       }
 
       playSound('safe');
-      const isLast = rowIdx===7;
+      const isLast = rowIdx===6;
       if(isLast) {
         playSound('deathbox');
         const done = rows.map(row=>({...row,isActive:false,isCompleted:true}));
         setShowBox(true);
         setPState(p=>{
-          const h=[{id:Date.now().toString(),result:'death_box',pts:820,row:8,ts:Date.now()},...p.history].slice(0,50);
-          const n={...p,points:p.points+820,runs:p.runs+1,wins:p.wins+1,best:Math.max(p.best,8),history:h};
+          const h=[{id:Date.now().toString(),result:'death_box',pts:820,row:7,ts:Date.now()},...p.history].slice(0,50);
+          const n={...p,points:p.points+820,runs:p.runs+1,wins:p.wins+1,best:Math.max(p.best,7),history:h};
           saveState(n);return n;
         });
-        return{...prev,rows:done,currentRow:8,status:'cashed_out',secured:820,reachedBox:true};
+        return{...prev,rows:done,currentRow:7,status:'cashed_out',secured:820,reachedBox:true};
       }
 
       const next = rows.map((row,ri)=>({...row,isActive:ri===rowIdx+1,isCompleted:ri===rowIdx?true:row.isCompleted}));
@@ -491,12 +491,12 @@ function App() {
               <div style={{fontSize:9,color:'#a0a8b8',letterSpacing:2,marginBottom:8}}>PAYOUT LADDER</div>
               {PAYOUTS.slice(1).map((p,i)=>(
                 <div key={i} style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
-                  <span style={{fontSize:8,color: run&&i<run.currentRow?'#4dc94d': run&&i===run.currentRow?'#ff5555':'#9098aa'}}>{i===7?'ROW 8':`ROW ${i+1}`}</span>
-                  <span style={{fontSize:9,color: i===7?'#D4AF37': run&&i<run.currentRow?'#4dc94d': run&&i===run.currentRow?'#ffffff':'#a0a8b8',fontWeight:i===7?700:400}}>{p}</span>
+                  <span style={{fontSize:8,color: run&&i<run.currentRow?'#4dc94d': run&&i===run.currentRow?'#ff5555':'#9098aa'}}>{i===6?'ROW 7':`ROW ${i+1}`}</span>
+                  <span style={{fontSize:9,color: i===6?'#D4AF37': run&&i<run.currentRow?'#4dc94d': run&&i===run.currentRow?'#ffffff':'#a0a8b8',fontWeight:i===6?700:400}}>{p}</span>
                 </div>
               ))}
               <div style={{display:'flex',justifyContent:'space-between',marginTop:4,paddingTop:4,borderTop:'1px solid #111'}}>
-                <span style={{fontSize:8,color:'#D4AF37'}}>ROW 9</span>
+                <span style={{fontSize:8,color:'#D4AF37'}}>ROW 8</span>
                 <span style={{fontSize:8,color:'#D4AF37'}}>☠ BOX</span>
               </div>
             </div>
@@ -513,7 +513,7 @@ function App() {
               <div style={{textAlign:'center',margin:'auto',padding:'40px 16px',animation:'fadeIn 0.4s ease'}}>
                 <img src={SKULL_IMG} alt="skull" style={{width:120,height:'auto',marginBottom:8,opacity:0.85,display:'block',marginLeft:'auto',marginRight:'auto'}}/>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:42,letterSpacing:5,marginBottom:6}}>THE FINAL VISION</div>
-                <div style={{color:'#9098aa',fontSize:10,letterSpacing:3,marginBottom:12}}>SURVIVE 9 ROWS</div>
+                <div style={{color:'#9098aa',fontSize:10,letterSpacing:3,marginBottom:12}}>SURVIVE 8 ROWS</div>
                 <div style={{color:'#CC0000',fontSize:10,letterSpacing:2,marginBottom:40}}>CLAIM THE DEATH BOX</div>
                 <button className="btn-red" onClick={startRun} style={{padding:'15px 60px',background:'#CC0000',border:'none',color:'#fff',fontSize:14,letterSpacing:4,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer'}}>
                   START RUN
@@ -525,7 +525,7 @@ function App() {
               // Calculate tile size so all 9 rows fit perfectly
               const actionBarH = window.innerWidth <= 700 ? 54 : 0;
               const availH = (boardRef.current ? boardRef.current.clientHeight : window.innerHeight - 108) - actionBarH - (isDead||isCashed ? 44 : 0) - 16;
-              const sz = Math.floor(availH / 9);
+              const sz = Math.floor(availH / 8);
               return (
                 <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',height:'100%',padding:'8px 12px',boxSizing:'border-box'}}>
                   {/* Status banner */}
@@ -540,8 +540,8 @@ function App() {
                   {/* Board rows — Death Box top, Row 1 bottom, no scroll */}
                   <div style={{display:'flex',flexDirection:'column',flex:1,justifyContent:'space-evenly'}}>
                     <GameRow
-                      row={{id:9,tiles:[],isActive:false,isCompleted:run.reachedBox,payout:820}}
-                      onTileClick={()=>{}} rowNum={9} isDeathBox={true} sz={sz}
+                      row={{id:8,tiles:[],isActive:false,isCompleted:run.reachedBox,payout:820}}
+                      onTileClick={()=>{}} rowNum={8} isDeathBox={true} sz={sz}
                     />
                     {[...run.rows].reverse().map(row=>(
                       <GameRow key={row.id} row={row} onTileClick={tid=>clickTile(row.id,tid)} rowNum={row.id+1} isDeathBox={false} sz={sz}/>
@@ -559,7 +559,7 @@ function App() {
               <div style={{marginBottom:10}}>
                 <div style={{fontSize:9,color:'#9098aa',letterSpacing:1}}>STATUS</div>
                 <div style={{fontSize:11,letterSpacing:1,fontWeight:600,color:!run?'#7a8090':isActive?'#ff5555':isDead?'#ff5555':'#4dc94d',marginTop:2}}>
-                  {!run?'IDLE':isActive?`ROW ${run.currentRow+1} / 8`:isDead?'ELIMINATED':'SECURED'}
+                  {!run?'IDLE':isActive?`ROW ${run.currentRow+1} / 7`:isDead?'ELIMINATED':'SECURED'}
                 </div>
               </div>
               {isActive && (
