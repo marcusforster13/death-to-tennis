@@ -53,7 +53,7 @@ console.warn = _warn;
     .desktop-sidebar { display:none!important; }
     .mobile-bottom-bar { display:flex!important; }
     .game-layout { flex-direction:column!important; height:calc(100vh - 54px)!important; overflow:hidden!important; }
-    .main-board { flex:1!important; overflow-y:auto!important; display:flex!important; flex-direction:column!important; }
+    .main-board { flex:1!important; overflow:hidden!important; display:flex!important; flex-direction:column!important; }
     .board-inner { flex:1!important; }
     .header-nav { display:none!important; }
     .mobile-tabs { display:flex!important; gap:4px; }
@@ -231,7 +231,7 @@ function saveState(s) {
 }
 
 // ─── TILE ─────────────────────────────────────────────────────────────────────
-function TileCell({tile, active, onClick}) {
+function TileCell({tile, active, onClick, sz}) {
   const safe = tile.state==='safe';
   const bomb = tile.state==='bomb';
   const hidden = tile.state==='hidden';
@@ -241,70 +241,66 @@ function TileCell({tile, active, onClick}) {
       onClick={active && hidden ? onClick : undefined}
       disabled={!active || !hidden}
       style={{
-        width:58, height:58,
+        width:sz, height:sz, minWidth:sz, minHeight:sz,
         border: bomb ? '2px solid #CC0000' : safe ? '2px solid #3aaa3a' : active ? '2px solid #3e4455' : '2px solid #252830',
-        borderRadius:5,
+        borderRadius:4,
         background: bomb ? 'rgba(204,0,0,0.25)' : safe ? 'rgba(42,160,42,0.2)' : active ? '#22252e' : '#191c23',
         display:'flex', alignItems:'center', justifyContent:'center',
-        boxShadow: bomb ? '0 0 20px rgba(204,0,0,0.6)' : safe ? '0 0 14px rgba(60,200,60,0.35)' : 'none',
+        boxShadow: bomb ? '0 0 16px rgba(204,0,0,0.6)' : safe ? '0 0 10px rgba(60,200,60,0.35)' : 'none',
         animation: bomb ? 'bombShake 0.45s ease' : safe ? 'safeReveal 0.25s ease' : 'none',
         position:'relative', padding:0, flexShrink:0,
       }}
     >
       {bomb ? (
-        <img src={SKULL_IMG} alt="💀" style={{width:36,height:36,objectFit:'contain',filter:'brightness(0) saturate(100%) invert(30%) sepia(90%) saturate(800%) hue-rotate(340deg) brightness(120%)'}}/>
+        <img src={SKULL_IMG} alt="x" style={{width:sz*0.6,height:sz*0.6,objectFit:'contain',filter:'brightness(0) saturate(100%) invert(30%) sepia(90%) saturate(800%) hue-rotate(340deg) brightness(120%)'}}/>
       ) : safe ? (
-        <span className="checkmark" style={{fontSize:22,color:'#5ddd5d',fontWeight:700,lineHeight:1}}>✓</span>
+        <span style={{fontSize:sz*0.38,color:'#5ddd5d',fontWeight:700,lineHeight:1}}>✓</span>
       ) : active ? (
-        <span className="dot" style={{width:8,height:8,borderRadius:'50%',background:'#3e4455',display:'block'}}/>
+        <span style={{width:sz*0.14,height:sz*0.14,borderRadius:'50%',background:'#3e4455',display:'block'}}/>
       ) : ''}
     </button>
   );
 }
 
 // ─── ROW ──────────────────────────────────────────────────────────────────────
-function GameRow({row, onTileClick, rowNum, isDeathBox}) {
+function GameRow({row, onTileClick, rowNum, isDeathBox, sz}) {
   return (
-    <div className="row-gap" style={{
-      display:'flex', alignItems:'center', gap:10,
-      padding:'4px 0',
+    <div style={{
+      display:'flex', alignItems:'center', gap:6, flexShrink:0,
+      height:sz, overflow:'hidden',
       opacity: row.isActive ? 1 : row.isCompleted ? 0.65 : 0.35,
       transition:'opacity 0.3s',
     }}>
-      {/* Label */}
-      <div className="row-label" style={{width:58,textAlign:'right',flexShrink:0}}>
+      <div style={{width:34,textAlign:'right',flexShrink:0}}>
         {isDeathBox ? (
-          <span style={{color:'#D4AF37',fontSize:9,fontWeight:700,letterSpacing:1,lineHeight:1.3}}>DEATH<br/>BOX</span>
+          <span style={{color:'#D4AF37',fontSize:7,fontWeight:700,lineHeight:1.2}}>DEATH{String.fromCharCode(10)}BOX</span>
         ) : (
           <>
-            <div style={{fontSize:9,color:row.isActive?'#ff4444':'#9098aa',letterSpacing:1,fontWeight:700}}>ROW {rowNum}</div>
-            <div className="payout-val" style={{fontSize:10,color:row.isActive?'#ffffff':'#6a7280',fontWeight:600}}>{row.payout}</div>
+            <div style={{fontSize:7,color:row.isActive?'#ff4444':'#666',fontWeight:700}}>R{rowNum}</div>
+            <div style={{fontSize:8,color:row.isActive?'#fff':'#555',fontWeight:600}}>{row.payout}</div>
           </>
         )}
       </div>
-
-      {/* Active bar */}
-      <div className="active-bar" style={{
-        width:3,height:58,borderRadius:2,flexShrink:0,
+      <div style={{
+        width:3, height:sz*0.75, borderRadius:2, flexShrink:0,
         background: row.isActive ? '#CC0000' : row.isCompleted ? '#3aaa3a' : '#2e3240',
-        boxShadow: row.isActive ? '0 0 10px #CC0000' : 'none',
+        boxShadow: row.isActive ? '0 0 8px #CC0000' : 'none',
         transition:'all 0.3s',
       }}/>
-
-      {/* Tiles or Death Box */}
-      <div className="tile-gap" style={{display:'flex',gap:7,flexWrap:'nowrap'}}>
+      <div style={{display:'flex',gap:4,flexWrap:'nowrap',alignItems:'center'}}>
         {isDeathBox ? (
-          <div className={`death-box-tile ${row.isCompleted ? 'death-box-glow' : ''}`} style={{
-            width:180,height:58,border:`2px solid ${row.isCompleted?'#D4AF37':'#2e3240'}`,
-            borderRadius:5,background:row.isCompleted?'rgba(212,175,55,0.12)':'rgba(212,175,55,0.04)',
+          <div className={row.isCompleted ? 'death-box-glow' : ''} style={{
+            width:sz*3, height:sz*0.82,
+            border:`2px solid ${row.isCompleted?'#D4AF37':'#2e3240'}`,
+            borderRadius:4,background:row.isCompleted?'rgba(212,175,55,0.12)':'rgba(212,175,55,0.04)',
             display:'flex',alignItems:'center',justifyContent:'center',
-            color:row.isCompleted?'#D4AF37':'#555',fontSize:10,fontWeight:700,letterSpacing:2,
+            color:row.isCompleted?'#D4AF37':'#555',fontSize:9,fontWeight:700,letterSpacing:2,
           }}>
             ☠ DEATH BOX
           </div>
         ) : (
           row.tiles.map(tile => (
-            <TileCell key={tile.id} tile={tile} active={row.isActive} onClick={()=>onTileClick(tile.id)}/>
+            <TileCell key={tile.id} tile={tile} active={row.isActive} onClick={()=>onTileClick(tile.id)} sz={sz*0.82}/>
           ))
         )}
       </div>
@@ -337,6 +333,12 @@ function App() {
   const [tab, setTab] = useState('game');
   const [showBox, setShowBox] = useState(false);
   const boardRef = useRef(null);
+  const [, forceUpdate] = useState(0);
+  useEffect(()=>{
+    const onResize = ()=>forceUpdate(n=>n+1);
+    window.addEventListener('resize', onResize);
+    return ()=>window.removeEventListener('resize', onResize);
+  },[]);
 
   useEffect(()=>saveState(pState),[pState]);
 
@@ -497,9 +499,9 @@ function App() {
           </aside>
 
           {/* CENTER BOARD */}
-          <main ref={boardRef} className="main-board" style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',alignItems:'center',minHeight:0}}>
+          <main ref={boardRef} className="main-board" style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',overflow:'hidden',minHeight:0}}>
             {!run && (
-              <div style={{textAlign:'center',marginTop:'auto',marginBottom:'auto',padding:'40px 16px',animation:'fadeIn 0.4s ease'}}>
+              <div style={{textAlign:'center',margin:'auto',padding:'40px 16px',animation:'fadeIn 0.4s ease'}}>
                 <img src={SKULL_IMG} alt="skull" style={{width:120,height:'auto',marginBottom:8,opacity:0.85}}/>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:42,letterSpacing:5,marginBottom:6}}>THE FINAL VISION</div>
                 <div style={{color:'#9098aa',fontSize:10,letterSpacing:3,marginBottom:12}}>SURVIVE 9 ROWS</div>
@@ -510,37 +512,35 @@ function App() {
               </div>
             )}
 
-            {run && (
-              <div style={{width:'100%',maxWidth:560,flex:1,display:'flex',flexDirection:'column',padding:'16px 16px 20px',justifyContent:'flex-end'}} className="board-inner">
-
-                {/* Status banner at top */}
-                {(isDead||isCashed) && (
-                  <div style={{marginBottom:16,padding:'12px 18px',background:isDead?'rgba(204,0,0,0.12)':'rgba(60,160,60,0.12)',border:`1px solid ${isDead?'rgba(204,0,0,0.5)':'rgba(60,160,60,0.5)'}`,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'space-between',animation:'fadeIn 0.3s ease'}}>
-                    <div style={{fontSize:11,color:isDead?'#ff5555':'#4dc94d',letterSpacing:1,fontWeight:600}}>
-                      {isDead ? '💀 BOMB HIT — RUN OVER' : run.reachedBox ? '☠ DEATH BOX CLAIMED' : `✓ CASHED OUT — +${run.secured} PTS`}
+            {run && (() => {
+              // Calculate tile size so all 9 rows fit perfectly in the available height
+              const bottomBarH = window.innerWidth <= 700 ? 60 : 0;
+              const availH = (boardRef.current ? boardRef.current.clientHeight : window.innerHeight - 54) - bottomBarH - (isDead||isCashed ? 52 : 0) - 16;
+              const sz = Math.floor(availH / 9);
+              return (
+                <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',height:'100%',padding:'8px 12px',boxSizing:'border-box'}}>
+                  {/* Status banner */}
+                  {(isDead||isCashed) && (
+                    <div style={{marginBottom:6,padding:'8px 14px',background:isDead?'rgba(204,0,0,0.12)':'rgba(60,160,60,0.12)',border:`1px solid ${isDead?'rgba(204,0,0,0.5)':'rgba(60,160,60,0.5)'}`,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+                      <div style={{fontSize:10,color:isDead?'#ff5555':'#4dc94d',letterSpacing:1,fontWeight:600}}>
+                        {isDead ? '💀 BOMB HIT — RUN OVER' : run.reachedBox ? '☠ DEATH BOX CLAIMED' : `✓ CASHED OUT — +${run.secured} PTS`}
+                      </div>
+                      <button className="btn-red" onClick={startRun} style={{padding:'5px 14px',background:'#CC0000',border:'none',color:'#fff',fontSize:9,letterSpacing:2,fontFamily:'inherit',borderRadius:3,cursor:'pointer'}}>NEW RUN</button>
                     </div>
-                    <button className="btn-red" onClick={startRun} style={{padding:'7px 20px',background:'#CC0000',border:'none',color:'#fff',fontSize:9,letterSpacing:2,fontFamily:'inherit',borderRadius:3,cursor:'pointer'}}>
-                      NEW RUN
-                    </button>
+                  )}
+                  {/* Board rows — Death Box top, Row 1 bottom, no scroll */}
+                  <div style={{display:'flex',flexDirection:'column',flex:1,justifyContent:'space-evenly'}}>
+                    <GameRow
+                      row={{id:9,tiles:[],isActive:false,isCompleted:run.reachedBox,payout:820}}
+                      onTileClick={()=>{}} rowNum={9} isDeathBox={true} sz={sz}
+                    />
+                    {[...run.rows].reverse().map(row=>(
+                      <GameRow key={row.id} row={row} onTileClick={tid=>clickTile(row.id,tid)} rowNum={row.id+1} isDeathBox={false} sz={sz}/>
+                    ))}
                   </div>
-                )}
-
-                {/* Board: Death Box at TOP, Row 1 at BOTTOM */}
-                <div style={{display:'flex',flexDirection:'column',gap:2}}>
-                  {/* Row 9 — Death Box — top */}
-                  <GameRow
-                    row={{id:9,tiles:[],isActive:false,isCompleted:run.reachedBox,payout:820}}
-                    onTileClick={()=>{}}
-                    rowNum={9}
-                    isDeathBox={true}
-                  />
-                  {/* Rows 8 down to 1 */}
-                  {[...run.rows].reverse().map(row=>(
-                    <GameRow key={row.id} row={row} onTileClick={tid=>clickTile(row.id,tid)} rowNum={row.id+1} isDeathBox={false}/>
-                  ))}
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </main>
 
           {/* RIGHT PANEL — hidden on mobile */}
