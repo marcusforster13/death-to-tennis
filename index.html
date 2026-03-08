@@ -53,7 +53,8 @@ console.warn = _warn;
     .desktop-sidebar { display:none!important; }
     .mobile-bottom-bar { display:flex!important; }
     .game-layout { flex-direction:column!important; height:calc(100vh - 54px)!important; overflow:hidden!important; }
-    .main-board { flex:1!important; overflow-y:auto!important; }
+    .main-board { flex:1!important; overflow-y:auto!important; display:flex!important; flex-direction:column!important; }
+    .board-inner { flex:1!important; }
     .header-nav { display:none!important; }
     .mobile-tabs { display:flex!important; gap:4px; }
     /* Tiles shrink on mobile */
@@ -510,7 +511,7 @@ function App() {
             )}
 
             {run && (
-              <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',padding:'16px 16px 20px'}} className="board-inner">
+              <div style={{width:'100%',maxWidth:560,flex:1,display:'flex',flexDirection:'column',padding:'16px 16px 20px',justifyContent:'flex-end'}} className="board-inner">
 
                 {/* Status banner at top */}
                 {(isDead||isCashed) && (
