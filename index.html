@@ -67,6 +67,11 @@ console.warn = _warn;
     .row-gap { gap:7px!important; }
     .death-box-tile { width:140px!important; height:44px!important; font-size:9px!important; }
     .board-inner { padding:10px 10px 80px!important; }
+    /* Shop: 1 card per row on mobile */
+    .shop-grid { grid-template-columns: 1fr!important; gap:12px!important; }
+    .shop-grid .reward-card { display:flex!important; flex-direction:row!important; }
+    .shop-grid .reward-card .card-image { width:100px!important; height:auto!important; min-height:80px!important; flex-shrink:0!important; border-bottom:none!important; border-right:1px solid #2a2d36!important; }
+    .shop-grid .reward-card .card-body { flex:1!important; padding:12px!important; }
   }
   .mobile-bottom-bar { display:none; position:fixed; bottom:0; left:0; right:0; background:#13151a; border-top:1px solid #2a2d36; z-index:45; padding:10px 16px; gap:12px; align-items:center; }
 </style>
@@ -184,7 +189,7 @@ function playSound(type) {
 
 // ─── ENGINE ───────────────────────────────────────────────────────────────────
 function randTileCount() {
-  return [2,3,4,5,6,7][Math.floor(Math.random()*6)];
+  return [2,3,4,5,6,6][Math.floor(Math.random()*6)];
 }
 
 function generateRow(rowIdx) {
@@ -613,19 +618,19 @@ function App() {
               <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:'#D4AF37',letterSpacing:1}}>{pState.points.toLocaleString()} PTS</span>
             </div>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}} className="shop-grid">
             {pState.rewards.map(r=>{
               const can = pState.points>=r.cost && !r.redeemed;
               const tc = r.tier===3?'#D4AF37':r.tier===2?'#CC7722':'#666';
               const tierLabel = r.tier===3?'RARE':r.tier===2?'UNCOMMON':'STANDARD';
               return (
                 <div key={r.id} className="reward-card" style={{border:'1px solid #2a2d36',borderRadius:5,background:'#191c24',overflow:'hidden',opacity:r.redeemed?0.4:1,transition:'all 0.15s'}}>
-                  <div style={{height:160,background:'#1e2230',borderBottom:'1px solid #2a2d36',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
+                  <div className="card-image" style={{height:160,background:'#1e2230',borderBottom:'1px solid #2a2d36',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
                     <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:48,color:'#8a9090',letterSpacing:3}}>DTT</div>
-                    <div style={{position:'absolute',top:10,right:10,padding:'3px 8px',background:tc,borderRadius:2,fontSize:7,fontWeight:700,color:r.tier===3?'#000':'#fff',letterSpacing:1,fontWeight:700}}>{tierLabel}</div>
+                    <div style={{position:'absolute',top:10,right:10,padding:'3px 8px',background:tc,borderRadius:2,fontSize:7,fontWeight:700,color:r.tier===3?'#000':'#fff',letterSpacing:1}}>{tierLabel}</div>
                     {r.redeemed && <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,letterSpacing:2,color:'#4dc94d'}}>✓ REDEEMED</div>}
                   </div>
-                  <div style={{padding:14}}>
+                  <div className="card-body" style={{padding:14}}>
                     <div style={{fontSize:12,fontWeight:500,marginBottom:3}}>{r.title}</div>
                     <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:tc,letterSpacing:1,marginBottom:12}}>{r.cost.toLocaleString()} PTS</div>
                     <button onClick={()=>redeemReward(r.id)} disabled={!can} style={{width:'100%',padding:'9px',background:can?'#CC0000':'#1e2230',border:`1px solid ${can?'#CC0000':'#2e3240'}`,color:can?'#fff':'#5a6070',fontSize:9,letterSpacing:2,fontFamily:'inherit',borderRadius:3,cursor:can?'pointer':'not-allowed',transition:'all 0.15s'}}
