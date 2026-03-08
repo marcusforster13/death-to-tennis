@@ -53,8 +53,8 @@ console.warn = _warn;
     .desktop-sidebar { display:none!important; }
     .mobile-bottom-bar { display:none!important; }
     .mobile-action-bar { display:flex!important; }
-    .game-layout { height:100%!important; overflow:hidden!important; }
-    .main-board { flex:1!important; overflow:hidden!important; display:flex!important; flex-direction:column!important; }
+    .game-layout { flex:1!important; display:flex!important; flex-direction:column!important; }
+    .main-board { flex:1!important; overflow-y:auto!important; display:flex!important; flex-direction:column!important; -webkit-overflow-scrolling:touch!important; }
     .board-inner { flex:1!important; }
     .header-nav { display:none!important; }
     .mobile-tabs { display:flex!important; gap:4px; }
@@ -421,7 +421,7 @@ function App() {
       {showBox && <DeathBoxOverlay onClose={()=>setShowBox(false)}/>}
 
       {/* TOP BAR */}
-      <header style={{height:54,borderBottom:'1px solid #2a2d36',display:'flex',alignItems:'center',padding:'0 16px',gap:16,position:'sticky',top:0,background:'#13151a',zIndex:40}}>
+      <header style={{height:54,borderBottom:'1px solid #2a2d36',display:'flex',alignItems:'center',padding:'0 16px',gap:16,position:'fixed',top:0,left:0,right:0,background:'#13151a',zIndex:40}}>
         <img src={DTT_LOGO} alt="Death To Tennis" style={{height:28,width:'auto',flexShrink:0,objectFit:'contain'}}/>
         <div style={{width:1,height:24,background:'#252830',flexShrink:0}}/>
         <div className="header-nav" style={{display:'flex',gap:16,alignItems:'center'}}>
@@ -453,9 +453,9 @@ function App() {
 
       {/* GAME TAB */}
       {tab==='game' && (
-        <div style={{display:'flex',flexDirection:'column',height:'calc(100vh - 54px)',overflow:'hidden'}}>
+        <div style={{display:'flex',flexDirection:'column',height:'calc(100vh - 54px)',marginTop:54}}>
         {/* ACTION BAR — shown on mobile below header */}
-        <div className="mobile-action-bar" style={{display:'none',alignItems:'center',gap:12,padding:'8px 16px',borderBottom:'1px solid #2a2d36',background:'#13151a',flexShrink:0}}>
+        <div className="mobile-action-bar" style={{display:'none',alignItems:'center',gap:12,padding:'8px 16px',borderBottom:'1px solid #2a2d36',background:'#13151a',flexShrink:0,position:'sticky',top:54,zIndex:35}}>
           <div style={{flex:1}}>
             <div style={{fontSize:7,color:'#9098aa',letterSpacing:2}}>
               {isActive ? `ROW ${(run?.currentRow||0)+1} / 8` : isDead ? 'ELIMINATED' : isCashed ? 'SECURED' : 'READY'}
@@ -524,8 +524,8 @@ function App() {
             {run && (() => {
               // Calculate tile size so all 9 rows fit perfectly
               const actionBarH = window.innerWidth <= 700 ? 54 : 0;
-              const availH = (boardRef.current ? boardRef.current.clientHeight : window.innerHeight - 108) - actionBarH - (isDead||isCashed ? 44 : 0) - 32;
-              const sz = Math.min(Math.floor(availH / 8), 64);
+              const availH = (boardRef.current ? boardRef.current.clientHeight : window.innerHeight - 108) - actionBarH - (isDead||isCashed ? 44 : 0) - 16;
+              const sz = Math.floor(availH / 8);
               return (
                 <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',height:'100%',padding:'8px 12px',boxSizing:'border-box'}}>
                   {/* Status banner */}
@@ -624,7 +624,7 @@ function App() {
 
       {/* SHOP TAB */}
       {tab==='shop' && (
-        <div style={{padding:'32px 40px',maxWidth:1000,margin:'0 auto',animation:'fadeIn 0.3s ease'}}>
+        <div style={{padding:'32px 40px',paddingTop:86,maxWidth:1000,margin:'0 auto',animation:'fadeIn 0.3s ease'}}>
           <div style={{marginBottom:28}}>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:44,letterSpacing:5}}>REWARD SHOP</div>
             <div style={{color:'#c0c8d4',fontSize:11,letterSpacing:2,marginTop:4}}>Redeem points for exclusive Death To Tennis pieces</div>
@@ -663,7 +663,7 @@ function App() {
 
       {/* LEADERBOARD TAB */}
       {tab==='leaderboard' && (
-        <div style={{padding:'32px 40px',maxWidth:680,margin:'0 auto',animation:'fadeIn 0.3s ease'}}>
+        <div style={{padding:'32px 40px',paddingTop:86,maxWidth:680,margin:'0 auto',animation:'fadeIn 0.3s ease'}}>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:44,letterSpacing:5,marginBottom:6}}>LEADERBOARD</div>
           <div style={{color:'#c0c8d4',fontSize:11,letterSpacing:2,marginBottom:24}}>Global rankings</div>
           <div style={{border:'1px solid #2a2d36',borderRadius:5,overflow:'hidden'}}>
