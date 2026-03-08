@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Final Vision</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;color:#fff;font-family:'DM Mono','Courier New',monospace;overflow-x:hidden}
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0f0f0f}::-webkit-scrollbar-thumb{background:#222;border-radius:2px}
+  .tile-btn{transition:all 0.15s ease;cursor:pointer;border:none;outline:none}
+  .tile-btn:not(:disabled):hover{transform:scale(1.08)!important;border-color:#CC0000!important;box-shadow:0 0 18px rgba(204,0,0,0.5)!important;background:#1e1e1e!important}
+  .tile-btn:disabled{cursor:default}
+  .btn-red{transition:all 0.15s;cursor:pointer}
+  .btn-red:not(:disabled):hover{background:#e60000!important;transform:translateY(-1px);box-shadow:0 6px 24px rgba(204,0,0,0.4)!important}
+  .btn-gold{transition:all 0.15s;cursor:pointer}
+  .btn-gold:not(:disabled):hover{background:#e6c23a!important;transform:translateY(-1px);box-shadow:0 4px 20px rgba(212,175,55,0.4)!important}
+  .nav-item{transition:all 0.15s;cursor:pointer;background:none;border:none;outline:none}
+  .nav-item:hover{color:#fff!important}
+  .reward-card{transition:all 0.15s}
+  .reward-card:hover{border-color:#333!important;background:#141414!important}
+  .lb-row{transition:background 0.15s}
+  .lb-row:hover{background:#111!important}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes bombShake{0%,100%{transform:translateX(0) scale(1)}15%{transform:translateX(-6px) scale(1.05)}30%{transform:translateX(6px)}45%{transform:translateX(-4px)}60%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
+  @keyframes safeReveal{0%{transform:scale(0.8);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+  @keyframes glowPulse{0%,100%{box-shadow:0 0 6px rgba(204,0,0,0.3)}50%{box-shadow:0 0 18px rgba(204,0,0,0.7)}}
+  @keyframes goldPulse{0%,100%{box-shadow:0 0 8px rgba(212,175,55,0.3)}50%{box-shadow:0 0 24px rgba(212,175,55,0.7)}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes deathReveal{0%{opacity:0;transform:scale(0.5)}50%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
+  .anim-fade{animation:fadeIn 0.35s ease forwards}
+  .anim-slide{animation:slideUp 0.4s ease forwards}
+  .active-row-glow{animation:glowPulse 2s ease infinite}
+  .death-box-glow{animation:goldPulse 2s ease infinite}
+  .red-bar-bottom{position:fixed;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#CC0000 30%,#CC0000 70%,transparent);z-index:50}
+  .noise::after{content:'';position:fixed;inset:0;opacity:0.025;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-size:128px}
+</style>
+</head>
+<body class="noise">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useEffect, useRef } = React;
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const PAYOUTS = [0, 120, 150, 190, 240, 320, 430, 600, 820];
+const BASE_PTS = 100;
+const BOMB_MAP = {7:3,6:3,5:2,4:2,3:1,2:1};
+const STORAGE_KEY = 'tfv_v1';
+
+const LEADERBOARD = [
+  {rank:1,name:'PHANTOM_X',points:48200,best:8,runs:312},
+  {rank:2,name:'REAPER99',points:37650,best:8,runs:241},
+  {rank:3,name:'V01D',points:29100,best:7,runs:198},
+  {rank:4,name:'NOCTURNE',points:21800,best:7,runs:167},
+  {rank:5,name:'GLITCH_',points:18400,best:6,runs:143},
+  {rank:6,name:'NULL_PTR',points:14200,best:6,runs:122},
+  {rank:7,name:'DRKSIDE',points:11600,best:6,runs:98},
+  {rank:8,name:'XENTROPY',points:9800,best:5,runs:87},
+  {rank:9,name:'FROSTBYTE',points:7400,best:5,runs:71},
+];
+
+const REWARDS_INIT = [
+  {id:'r1',title:'DTT Essential Tee',cost:2200,tier:1,redeemed:false},
+  {id:'r2',title:'DTT Acid Wash Tee',cost:2600,tier:1,redeemed:false},
+  {id:'r3',title:'DTT Shadow Tee',cost:3000,tier:2,redeemed:false},
+  {id:'r4',title:'DTT Void Tee',cost:3500,tier:2,redeemed:false},
+  {id:'r5',title:'DTT Phantom Tee',cost:4200,tier:3,redeemed:false},
+  {id:'r6',title:'DTT Signature Tee',cost:5000,tier:3,redeemed:false},
+];
+
+// ─── ENGINE ───────────────────────────────────────────────────────────────────
+function randTileCount() {
+  return [2,3,4,5,6,7][Math.floor(Math.random()*6)];
+}
+
+function generateRow(rowIdx) {
+  const n = randTileCount();
+  const bombs = new Set();
+  while(bombs.size < BOMB_MAP[n]) bombs.add(Math.floor(Math.random()*n));
+  return {
+    id: rowIdx,
+    tiles: Array.from({length:n},(_,i)=>({id:i,isBomb:bombs.has(i),state:'hidden'})),
+    isActive: rowIdx===0,
+    isCompleted: false,
+    payout: PAYOUTS[rowIdx+1]||820,
+  };
+}
+
+function generateRun() {
+  return {
+    id: Date.now().toString(),
+    rows: Array.from({length:8},(_,i)=>generateRow(i)),
+    currentRow: 0,
+    status: 'active',
+    secured: BASE_PTS,
+    reachedBox: false,
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  } catch{}
+  return {points:0,runs:0,wins:0,best:0,history:[],rewards:REWARDS_INIT};
+}
+
+function saveState(s) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch{}
+}
+
+// ─── TILE ─────────────────────────────────────────────────────────────────────
+function TileCell({tile, active, onClick}) {
+  const safe = tile.state==='safe';
+  const bomb = tile.state==='bomb';
+  const hidden = tile.state==='hidden';
+  return (
+    <button
+      className="tile-btn"
+      onClick={active && hidden ? onClick : undefined}
+      disabled={!active || !hidden}
+      style={{
+        width:58, height:58,
+        border: bomb ? '2px solid #CC0000' : safe ? '2px solid #2a6e2a' : active ? '2px solid #2e2e2e' : '2px solid #161616',
+        borderRadius:5,
+        background: bomb ? 'rgba(204,0,0,0.15)' : safe ? 'rgba(42,110,42,0.15)' : active ? '#141414' : '#0d0d0d',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        fontSize:22,
+        boxShadow: bomb ? '0 0 20px rgba(204,0,0,0.6)' : safe ? '0 0 14px rgba(60,200,60,0.35)' : 'none',
+        animation: bomb ? 'bombShake 0.45s ease' : safe ? 'safeReveal 0.25s ease' : 'none',
+        color: safe ? '#4caf50' : bomb ? '#CC0000' : '#333',
+        fontWeight:700, fontFamily:'inherit',
+        position:'relative',
+      }}
+    >
+      {bomb ? '💀' : safe ? '✓' : active ? (
+        <span style={{width:8,height:8,borderRadius:'50%',background:'#2a2a2a',display:'block'}}/>
+      ) : ''}
+    </button>
+  );
+}
+
+// ─── ROW ──────────────────────────────────────────────────────────────────────
+function GameRow({row, onTileClick, rowNum, isDeathBox}) {
+  return (
+    <div style={{
+      display:'flex', alignItems:'center', gap:10,
+      padding:'6px 0',
+      opacity: row.isActive ? 1 : row.isCompleted ? 0.55 : 0.2,
+      transition:'opacity 0.3s',
+    }}>
+      {/* Label */}
+      <div style={{width:58,textAlign:'right',flexShrink:0}}>
+        {isDeathBox ? (
+          <span style={{color:'#D4AF37',fontSize:9,fontWeight:700,letterSpacing:1,lineHeight:1.3}}>DEATH<br/>BOX</span>
+        ) : (
+          <>
+            <div style={{fontSize:9,color:row.isActive?'#CC0000':'#333',letterSpacing:1,fontWeight:700}}>ROW {rowNum}</div>
+            <div style={{fontSize:10,color:row.isActive?'#fff':'#2a2a2a',fontWeight:600}}>{row.payout}</div>
+          </>
+        )}
+      </div>
+
+      {/* Active bar */}
+      <div style={{
+        width:3,height:58,borderRadius:2,flexShrink:0,
+        background: row.isActive ? '#CC0000' : row.isCompleted ? '#2a6e2a' : '#111',
+        boxShadow: row.isActive ? '0 0 10px #CC0000' : 'none',
+        transition:'all 0.3s',
+      }}/>
+
+      {/* Tiles or Death Box */}
+      <div style={{display:'flex',gap:7}}>
+        {isDeathBox ? (
+          <div className={row.isCompleted ? 'death-box-glow' : ''} style={{
+            width:180,height:58,border:`2px solid ${row.isCompleted?'#D4AF37':'#222'}`,
+            borderRadius:5,background:row.isCompleted?'rgba(212,175,55,0.12)':'rgba(212,175,55,0.04)',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            color:row.isCompleted?'#D4AF37':'#333',fontSize:10,fontWeight:700,letterSpacing:2,
+          }}>
+            ☠ DEATH BOX
+          </div>
+        ) : (
+          row.tiles.map(tile => (
+            <TileCell key={tile.id} tile={tile} active={row.isActive} onClick={()=>onTileClick(tile.id)}/>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── DEATH OVERLAY ────────────────────────────────────────────────────────────
+function DeathBoxOverlay({onClose}) {
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.95)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',animation:'fadeIn 0.5s ease'}}>
+      <div style={{textAlign:'center',padding:48,maxWidth:500}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:90,color:'#D4AF37',lineHeight:1,animation:'deathReveal 0.6s ease',letterSpacing:4}}>☠</div>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:64,color:'#D4AF37',letterSpacing:6,marginTop:8}}>DEATH BOX</div>
+        <div style={{color:'#666',fontSize:11,letterSpacing:3,marginTop:12}}>YOU ARE ONE OF THE FEW WHO SURVIVED</div>
+        <div style={{fontSize:11,color:'#444',marginTop:6,letterSpacing:2}}>A physical reward will be dispatched to you</div>
+        <div style={{color:'#D4AF37',fontFamily:"'Bebas Neue',sans-serif",fontSize:48,letterSpacing:2,marginTop:28}}>+820 PTS</div>
+        <button className="btn-red" onClick={onClose} style={{marginTop:36,padding:'14px 56px',background:'#CC0000',border:'none',color:'#fff',fontSize:12,letterSpacing:3,fontFamily:'inherit',borderRadius:4,cursor:'pointer',fontFamily:"'Bebas Neue',sans-serif"}}>
+          CLAIM
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+function App() {
+  const [pState, setPState] = useState(loadState);
+  const [run, setRun] = useState(null);
+  const [tab, setTab] = useState('game');
+  const [showBox, setShowBox] = useState(false);
+  const boardRef = useRef(null);
+
+  useEffect(()=>saveState(pState),[pState]);
+
+  const startRun = useCallback(()=>{
+    setRun(generateRun());
+    setShowBox(false);
+    setTab('game');
+    setTimeout(()=>boardRef.current?.scrollTo({top:0,behavior:'smooth'}),100);
+  },[]);
+
+  const clickTile = useCallback((rowIdx, tileId)=>{
+    setRun(prev=>{
+      if(!prev || prev.status!=='active') return prev;
+      if(rowIdx!==prev.currentRow) return prev;
+
+      const rows = prev.rows.map((row,ri)=>{
+        if(ri!==rowIdx) return row;
+        return {...row, tiles:row.tiles.map(t=>t.id===tileId?{...t,state:t.isBomb?'bomb':'safe'}:t)};
+      });
+      const hit = rows[rowIdx].tiles.find(t=>t.id===tileId);
+
+      if(hit.isBomb) {
+        const dead = rows.map((row,ri)=>ri===rowIdx?{...row,isActive:false,tiles:row.tiles.map(t=>({...t,state:t.isBomb?'bomb':t.state}))}:row);
+        setPState(p=>{
+          const h=[{id:Date.now().toString(),result:'bomb',pts:0,row:rowIdx,ts:Date.now()},...p.history].slice(0,50);
+          const n={...p,runs:p.runs+1,history:h};
+          saveState(n);return n;
+        });
+        return{...prev,rows:dead,status:'dead'};
+      }
+
+      const isLast = rowIdx===7;
+      if(isLast) {
+        const done = rows.map(row=>({...row,isActive:false,isCompleted:true}));
+        setShowBox(true);
+        setPState(p=>{
+          const h=[{id:Date.now().toString(),result:'death_box',pts:820,row:8,ts:Date.now()},...p.history].slice(0,50);
+          const n={...p,points:p.points+820,runs:p.runs+1,wins:p.wins+1,best:Math.max(p.best,8),history:h};
+          saveState(n);return n;
+        });
+        return{...prev,rows:done,currentRow:8,status:'cashed_out',secured:820,reachedBox:true};
+      }
+
+      const next = rows.map((row,ri)=>({...row,isActive:ri===rowIdx+1,isCompleted:ri===rowIdx?true:row.isCompleted}));
+      return{...prev,rows:next,currentRow:rowIdx+1,secured:PAYOUTS[rowIdx+1]};
+    });
+  },[]);
+
+  const cashOut = useCallback(()=>{
+    setRun(prev=>{
+      if(!prev||prev.status!=='active'||prev.currentRow===0) return prev;
+      const pts = PAYOUTS[prev.currentRow];
+      setPState(p=>{
+        const h=[{id:Date.now().toString(),result:'cashout',pts,row:prev.currentRow,ts:Date.now()},...p.history].slice(0,50);
+        const n={...p,points:p.points+pts,runs:p.runs+1,wins:p.wins+1,best:Math.max(p.best,prev.currentRow),history:h};
+        saveState(n);return n;
+      });
+      return{...prev,status:'cashed_out',secured:pts};
+    });
+  },[]);
+
+  const redeemReward = useCallback((id)=>{
+    setPState(p=>{
+      const r = p.rewards.find(r=>r.id===id);
+      if(!r||r.redeemed||p.points<r.cost) return p;
+      const n={...p,points:p.points-r.cost,rewards:p.rewards.map(rw=>rw.id===id?{...rw,redeemed:true}:rw)};
+      saveState(n);return n;
+    });
+  },[]);
+
+  const reset = useCallback(()=>{
+    const fresh={points:0,runs:0,wins:0,best:0,history:[],rewards:REWARDS_INIT};
+    setPState(fresh);saveState(fresh);setRun(null);
+  },[]);
+
+  const isActive = run?.status==='active';
+  const isDead   = run?.status==='dead';
+  const isCashed = run?.status==='cashed_out';
+  const canCash  = isActive && (run?.currentRow||0)>0;
+  const nextPayout = run ? (PAYOUTS[run.currentRow+1]||820) : 0;
+  const nowPayout  = run ? PAYOUTS[run.currentRow] : 0;
+
+  return (
+    <div style={{minHeight:'100vh',background:'#0a0a0a'}}>
+      {showBox && <DeathBoxOverlay onClose={()=>setShowBox(false)}/>}
+
+      {/* TOP BAR */}
+      <header style={{height:54,borderBottom:'1px solid #141414',display:'flex',alignItems:'center',padding:'0 20px',gap:20,position:'sticky',top:0,background:'#0a0a0a',zIndex:40}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,flexShrink:0,color:'#fff'}}>
+          THE FINAL VISION
+        </div>
+        <div style={{width:1,height:24,background:'#161616',flexShrink:0}}/>
+        {['game','shop','leaderboard','history'].map(t=>(
+          <button key={t} className="nav-item" onClick={()=>setTab(t)} style={{color:tab===t?'#CC0000':'#333',fontSize:9,letterSpacing:2,fontFamily:'inherit',paddingBottom:3,borderBottom:tab===t?'1px solid #CC0000':'1px solid transparent',fontWeight:tab===t?500:400}}>
+            {t.toUpperCase()}
+          </button>
+        ))}
+        <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:20}}>
+          <div>
+            <div style={{fontSize:8,color:'#333',letterSpacing:2}}>BALANCE</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:'#D4AF37',letterSpacing:1}}>{pState.points.toLocaleString()} PTS</div>
+          </div>
+          <div style={{width:1,height:28,background:'#161616'}}/>
+          <div>
+            <div style={{fontSize:8,color:'#333',letterSpacing:2}}>RUNS</div>
+            <div style={{fontSize:12,color:'#555'}}>{pState.runs}</div>
+          </div>
+        </div>
+      </header>
+
+      {/* GAME TAB */}
+      {tab==='game' && (
+        <div style={{display:'flex',height:'calc(100vh - 54px)',overflow:'hidden'}}>
+
+          {/* LEFT SIDEBAR */}
+          <aside style={{width:180,borderRight:'1px solid #0f0f0f',padding:18,display:'flex',flexDirection:'column',gap:16,flexShrink:0,overflowY:'auto'}}>
+            <div>
+              <div style={{fontSize:8,color:'#222',letterSpacing:2,marginBottom:10}}>STATS</div>
+              {[{l:'BEST ROW',v:pState.best||'—'},{l:'WINS',v:pState.wins},{l:'WIN RATE',v:pState.runs?Math.round(pState.wins/pState.runs*100)+'%':'—'}].map(s=>(
+                <div key={s.l} style={{marginBottom:14}}>
+                  <div style={{fontSize:8,color:'#2a2a2a',letterSpacing:1}}>{s.l}</div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:'#444',letterSpacing:1}}>{s.v}</div>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div style={{fontSize:8,color:'#222',letterSpacing:2,marginBottom:8}}>PAYOUT LADDER</div>
+              {PAYOUTS.slice(1).map((p,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
+                  <span style={{fontSize:8,color: run&&i<run.currentRow?'#2a6e2a': run&&i===run.currentRow?'#CC0000':'#222'}}>{i===7?'ROW 8':`ROW ${i+1}`}</span>
+                  <span style={{fontSize:9,color: i===7?'#D4AF37': run&&i<run.currentRow?'#2a6e2a': run&&i===run.currentRow?'#fff':'#333',fontWeight:i===7?700:400}}>{p}</span>
+                </div>
+              ))}
+              <div style={{display:'flex',justifyContent:'space-between',marginTop:4,paddingTop:4,borderTop:'1px solid #111'}}>
+                <span style={{fontSize:8,color:'#D4AF37'}}>ROW 9</span>
+                <span style={{fontSize:8,color:'#D4AF37'}}>☠ BOX</span>
+              </div>
+            </div>
+            <button onClick={reset} style={{marginTop:'auto',padding:'7px',background:'none',border:'1px solid #141414',color:'#222',fontSize:8,letterSpacing:2,borderRadius:3,fontFamily:'inherit',cursor:'pointer',transition:'all 0.15s'}}
+              onMouseEnter={e=>{e.target.style.borderColor='#333';e.target.style.color='#444'}}
+              onMouseLeave={e=>{e.target.style.borderColor='#141414';e.target.style.color='#222'}}>
+              RESET DATA
+            </button>
+          </aside>
+
+          {/* CENTER BOARD */}
+          <main ref={boardRef} style={{flex:1,overflowY:'auto',padding:'20px 16px',display:'flex',flexDirection:'column',alignItems:'center'}}>
+            {!run && (
+              <div style={{textAlign:'center',marginTop:60,animation:'fadeIn 0.4s ease'}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:80,color:'#141414',letterSpacing:4,lineHeight:1}}>☠</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:42,letterSpacing:5,marginBottom:6}}>THE FINAL VISION</div>
+                <div style={{color:'#2a2a2a',fontSize:10,letterSpacing:3,marginBottom:12}}>SURVIVE 9 ROWS</div>
+                <div style={{color:'#CC0000',fontSize:10,letterSpacing:2,marginBottom:40}}>CLAIM THE DEATH BOX</div>
+                <button className="btn-red" onClick={startRun} style={{padding:'15px 60px',background:'#CC0000',border:'none',color:'#fff',fontSize:14,letterSpacing:4,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer'}}>
+                  START RUN
+                </button>
+              </div>
+            )}
+
+            {run && (
+              <div style={{width:'100%',maxWidth:560,animation:'slideUp 0.3s ease'}}>
+                {(isDead||isCashed) && (
+                  <div style={{marginBottom:16,padding:'12px 18px',background:isDead?'rgba(204,0,0,0.08)':'rgba(42,110,42,0.08)',border:`1px solid ${isDead?'rgba(204,0,0,0.3)':'rgba(42,110,42,0.3)'}`,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'space-between',animation:'fadeIn 0.3s ease'}}>
+                    <div style={{fontSize:11,color:isDead?'#CC0000':'#2a9e2a',letterSpacing:1,fontWeight:600}}>
+                      {isDead ? '💀 BOMB HIT — RUN OVER' : run.reachedBox ? '☠ DEATH BOX CLAIMED' : `✓ CASHED OUT — +${run.secured} PTS`}
+                    </div>
+                    <button className="btn-red" onClick={startRun} style={{padding:'7px 20px',background:'#CC0000',border:'none',color:'#fff',fontSize:9,letterSpacing:2,fontFamily:'inherit',borderRadius:3,cursor:'pointer'}}>
+                      NEW RUN
+                    </button>
+                  </div>
+                )}
+
+                {/* Board — reversed (row 1 at bottom) */}
+                <div style={{display:'flex',flexDirection:'column-reverse',gap:2}}>
+                  <GameRow
+                    row={{id:9,tiles:[],isActive:false,isCompleted:run.reachedBox,payout:820}}
+                    onTileClick={()=>{}}
+                    rowNum={9}
+                    isDeathBox={true}
+                  />
+                  {[...run.rows].reverse().map(row=>(
+                    <GameRow key={row.id} row={row} onTileClick={tid=>clickTile(row.id,tid)} rowNum={row.id+1} isDeathBox={false}/>
+                  ))}
+                </div>
+              </div>
+            )}
+          </main>
+
+          {/* RIGHT PANEL */}
+          <aside style={{width:210,borderLeft:'1px solid #0f0f0f',padding:18,display:'flex',flexDirection:'column',gap:14,flexShrink:0,overflowY:'auto'}}>
+            <div>
+              <div style={{fontSize:8,color:'#222',letterSpacing:2,marginBottom:12}}>CURRENT RUN</div>
+              <div style={{marginBottom:10}}>
+                <div style={{fontSize:8,color:'#2a2a2a',letterSpacing:1}}>STATUS</div>
+                <div style={{fontSize:11,letterSpacing:1,fontWeight:600,color:!run?'#222':isActive?'#CC0000':isDead?'#CC0000':'#2a9e2a',marginTop:2}}>
+                  {!run?'IDLE':isActive?`ROW ${run.currentRow+1} / 8`:isDead?'ELIMINATED':'SECURED'}
+                </div>
+              </div>
+              {isActive && (
+                <>
+                  <div style={{marginBottom:10}}>
+                    <div style={{fontSize:8,color:'#2a2a2a',letterSpacing:1}}>NEXT PAYOUT</div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:'#fff',letterSpacing:1,lineHeight:1}}>
+                      {nextPayout}<span style={{fontSize:11,color:'#333',marginLeft:3}}>PTS</span>
+                    </div>
+                  </div>
+                  {run.currentRow>0 && (
+                    <div style={{marginBottom:10,padding:'8px 10px',background:'rgba(212,175,55,0.06)',border:'1px solid rgba(212,175,55,0.15)',borderRadius:3}}>
+                      <div style={{fontSize:8,color:'#D4AF37',letterSpacing:1}}>CASH OUT NOW</div>
+                      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,color:'#D4AF37',letterSpacing:1}}>+{nowPayout} PTS</div>
+                    </div>
+                  )}
+                </>
+              )}
+              {(isDead||isCashed) && run && (
+                <div style={{marginBottom:10}}>
+                  <div style={{fontSize:8,color:'#2a2a2a',letterSpacing:1}}>SECURED</div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:isDead?'#333':'#D4AF37',letterSpacing:1}}>{isDead?'0':run.secured} PTS</div>
+                </div>
+              )}
+            </div>
+
+            {/* Buttons */}
+            <button className="btn-gold" onClick={cashOut} disabled={!canCash} style={{padding:'13px',background:canCash?'#D4AF37':'#0f0f0f',border:`1px solid ${canCash?'#D4AF37':'#141414'}`,color:canCash?'#000':'#222',fontSize:12,letterSpacing:3,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:canCash?'pointer':'not-allowed',fontWeight:700}}>
+              CASH OUT
+            </button>
+            {!run && (
+              <button className="btn-red" onClick={startRun} style={{padding:'13px',background:'#CC0000',border:'none',color:'#fff',fontSize:12,letterSpacing:3,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer'}}>
+                START RUN
+              </button>
+            )}
+            {(isDead||isCashed) && (
+              <button className="btn-red" onClick={startRun} style={{padding:'13px',background:'#CC0000',border:'none',color:'#fff',fontSize:12,letterSpacing:3,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer'}}>
+                NEW RUN
+              </button>
+            )}
+
+            {/* History */}
+            <div style={{marginTop:4}}>
+              <div style={{fontSize:8,color:'#222',letterSpacing:2,marginBottom:8}}>RECENT</div>
+              {pState.history.length===0 && <div style={{fontSize:9,color:'#1a1a1a'}}>No runs yet</div>}
+              {pState.history.slice(0,7).map(e=>(
+                <div key={e.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:7,paddingBottom:7,borderBottom:'1px solid #0f0f0f'}}>
+                  <div>
+                    <div style={{fontSize:9,color:e.result==='bomb'?'#CC0000':e.result==='death_box'?'#D4AF37':'#2a9e2a',letterSpacing:1}}>
+                      {e.result==='bomb'?'💀 DEAD':e.result==='death_box'?'☠ BOX':'✓ OUT'}
+                    </div>
+                    <div style={{fontSize:8,color:'#222'}}>ROW {e.row}</div>
+                  </div>
+                  <div style={{fontSize:11,fontFamily:"'Bebas Neue',sans-serif",color:e.pts>0?'#D4AF37':'#222',letterSpacing:1}}>{e.pts>0?`+${e.pts}`:'—'}</div>
+                </div>
+              ))}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* SHOP TAB */}
+      {tab==='shop' && (
+        <div style={{padding:'32px 40px',maxWidth:1000,margin:'0 auto',animation:'fadeIn 0.3s ease'}}>
+          <div style={{marginBottom:28}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:44,letterSpacing:5}}>REWARD SHOP</div>
+            <div style={{color:'#333',fontSize:10,letterSpacing:2,marginTop:4}}>Redeem points for exclusive Death To Tennis pieces</div>
+            <div style={{marginTop:10,display:'inline-flex',alignItems:'center',gap:10,padding:'6px 16px',background:'#0f0f0f',border:'1px solid #141414',borderRadius:4}}>
+              <span style={{fontSize:8,color:'#333',letterSpacing:2}}>YOUR BALANCE</span>
+              <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:'#D4AF37',letterSpacing:1}}>{pState.points.toLocaleString()} PTS</span>
+            </div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+            {pState.rewards.map(r=>{
+              const can = pState.points>=r.cost && !r.redeemed;
+              const tc = r.tier===3?'#D4AF37':r.tier===2?'#CC7722':'#666';
+              const tierLabel = r.tier===3?'RARE':r.tier===2?'UNCOMMON':'STANDARD';
+              return (
+                <div key={r.id} className="reward-card" style={{border:'1px solid #141414',borderRadius:5,background:'#0d0d0d',overflow:'hidden',opacity:r.redeemed?0.4:1,transition:'all 0.15s'}}>
+                  <div style={{height:160,background:'#111',borderBottom:'1px solid #141414',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:48,color:'#1a1a1a',letterSpacing:3}}>DTT</div>
+                    <div style={{position:'absolute',top:10,right:10,padding:'3px 8px',background:tc,borderRadius:2,fontSize:7,fontWeight:700,color:r.tier===3?'#000':'#fff',letterSpacing:1}}>{tierLabel}</div>
+                    {r.redeemed && <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,letterSpacing:2,color:'#2a9e2a'}}>✓ REDEEMED</div>}
+                  </div>
+                  <div style={{padding:14}}>
+                    <div style={{fontSize:12,fontWeight:500,marginBottom:3}}>{r.title}</div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:tc,letterSpacing:1,marginBottom:12}}>{r.cost.toLocaleString()} PTS</div>
+                    <button onClick={()=>redeemReward(r.id)} disabled={!can} style={{width:'100%',padding:'9px',background:can?'#CC0000':'#0f0f0f',border:`1px solid ${can?'#CC0000':'#141414'}`,color:can?'#fff':'#2a2a2a',fontSize:9,letterSpacing:2,fontFamily:'inherit',borderRadius:3,cursor:can?'pointer':'not-allowed',transition:'all 0.15s'}}
+                      onMouseEnter={e=>{if(can)e.target.style.background='#e60000'}}
+                      onMouseLeave={e=>{if(can)e.target.style.background='#CC0000'}}>
+                      {r.redeemed?'REDEEMED':can?'REDEEM':`NEED ${(r.cost-pState.points).toLocaleString()} MORE`}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* LEADERBOARD TAB */}
+      {tab==='leaderboard' && (
+        <div style={{padding:'32px 40px',maxWidth:680,margin:'0 auto',animation:'fadeIn 0.3s ease'}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:44,letterSpacing:5,marginBottom:6}}>LEADERBOARD</div>
+          <div style={{color:'#333',fontSize:10,letterSpacing:2,marginBottom:24}}>Global rankings</div>
+          <div style={{border:'1px solid #141414',borderRadius:5,overflow:'hidden'}}>
+            <div style={{display:'grid',gridTemplateColumns:'44px 1fr 110px 70px 70px',padding:'10px 18px',background:'#0f0f0f',borderBottom:'1px solid #141414'}}>
+              {['#','PLAYER','POINTS','BEST','RUNS'].map(h=><div key={h} style={{fontSize:8,color:'#222',letterSpacing:2}}>{h}</div>)}
+            </div>
+            {[...LEADERBOARD,{rank:LEADERBOARD.length+1,name:'YOU',points:pState.points,best:pState.best,runs:pState.runs,isYou:true}]
+              .sort((a,b)=>b.points-a.points)
+              .map((e,i)=>{
+                const isYou = e.isYou||e.name==='YOU';
+                const rc = i===0?'#D4AF37':i===1?'#888':i===2?'#CC7722':'#333';
+                return (
+                  <div key={e.name+i} className="lb-row" style={{display:'grid',gridTemplateColumns:'44px 1fr 110px 70px 70px',padding:'13px 18px',borderBottom:'1px solid #0d0d0d',background:isYou?'rgba(204,0,0,0.04)':'transparent',transition:'background 0.15s'}}>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:rc}}>{i+1}</div>
+                    <div style={{fontSize:11,color:isYou?'#CC0000':'#888',fontWeight:isYou?700:400,letterSpacing:isYou?1:0}}>{isYou?'YOU ←':e.name}</div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:'#D4AF37',letterSpacing:1}}>{(isYou?pState.points:e.points).toLocaleString()}</div>
+                    <div style={{fontSize:10,color:'#444'}}>{isYou?pState.best:e.best}</div>
+                    <div style={{fontSize:10,color:'#444'}}>{isYou?pState.runs:e.runs}</div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* HISTORY TAB */}
+      {tab==='history' && (
+        <div style={{padding:'32px 40px',maxWidth:680,margin:'0 auto',animation:'fadeIn 0.3s ease'}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:44,letterSpacing:5,marginBottom:6}}>RUN HISTORY</div>
+          <div style={{color:'#333',fontSize:10,letterSpacing:2,marginBottom:24}}>Your last {pState.history.length} runs</div>
+          {pState.history.length===0 && (
+            <div style={{textAlign:'center',padding:80,color:'#1a1a1a',fontSize:12,letterSpacing:3}}>NO RUNS YET</div>
+          )}
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            {pState.history.map((e,i)=>(
+              <div key={e.id} style={{display:'grid',gridTemplateColumns:'1fr 90px 90px 110px',alignItems:'center',padding:'13px 18px',background:'#0d0d0d',border:'1px solid #141414',borderRadius:4,animation:`fadeIn 0.3s ease ${i*0.03}s both`}}>
+                <div>
+                  <div style={{fontSize:10,color:e.result==='bomb'?'#CC0000':e.result==='death_box'?'#D4AF37':'#2a9e2a',letterSpacing:1,fontWeight:600}}>
+                    {e.result==='bomb'?'💀 ELIMINATED':e.result==='death_box'?'☠ DEATH BOX':'✓ CASHED OUT'}
+                  </div>
+                  <div style={{fontSize:8,color:'#222',marginTop:2}}>{new Date(e.ts).toLocaleString()}</div>
+                </div>
+                <div style={{fontSize:8,color:'#333',letterSpacing:1}}>ROW {e.row}</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:e.pts>0?'#D4AF37':'#222',letterSpacing:1}}>{e.pts>0?`+${e.pts}`:'—'}</div>
+                <div style={{fontSize:8,color:'#222',letterSpacing:1,textAlign:'right'}}>{e.result==='bomb'?'LOST RUN':'SECURED'}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="red-bar-bottom"/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
