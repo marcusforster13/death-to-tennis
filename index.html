@@ -51,26 +51,14 @@ console.warn = _warn;
   /* ── MOBILE ── */
   @media (max-width: 700px) {
     .desktop-sidebar { display:none!important; }
-    .mobile-bottom-bar { display:flex!important; }
-    .game-layout { flex-direction:column!important; height:calc(100vh - 54px)!important; overflow:hidden!important; }
+    .mobile-bottom-bar { display:none!important; }
+    .mobile-action-bar { display:flex!important; }
+    .game-layout { height:100%!important; overflow:hidden!important; }
     .main-board { flex:1!important; overflow:hidden!important; display:flex!important; flex-direction:column!important; }
     .board-inner { flex:1!important; }
     .header-nav { display:none!important; }
     .mobile-tabs { display:flex!important; gap:4px; }
-    /* Tiles shrink on mobile */
-    .tile-btn { width:44px!important; height:44px!important; }
-    .tile-btn img { width:26px!important; height:26px!important; }
-    .tile-btn span.checkmark { font-size:17px!important; }
-    .tile-btn span.dot { width:6px!important; height:6px!important; }
-    .row-label { width:42px!important; font-size:8px!important; }
-    .row-label .payout-val { font-size:9px!important; }
-    .active-bar { height:44px!important; }
-    .tile-gap { gap:5px!important; }
-    .row-gap { gap:7px!important; }
-    .death-box-tile { width:140px!important; height:44px!important; font-size:9px!important; }
-    .board-inner { padding:10px 10px 80px!important; }
-    /* Shop: 1 card per row on mobile */
-    .shop-grid { grid-template-columns: 1fr!important; gap:12px!important; }
+    .shop-grid { grid-template-columns:1fr!important; gap:12px!important; }
     .shop-grid .reward-card { display:flex!important; flex-direction:row!important; }
     .shop-grid .reward-card .card-image { width:100px!important; height:auto!important; min-height:80px!important; flex-shrink:0!important; border-bottom:none!important; border-right:1px solid #2a2d36!important; }
     .shop-grid .reward-card .card-body { flex:1!important; padding:12px!important; }
@@ -465,7 +453,28 @@ function App() {
 
       {/* GAME TAB */}
       {tab==='game' && (
-        <div className="game-layout" style={{display:'flex',height:'calc(100vh - 54px)',overflow:'hidden',minHeight:0}}>
+        <div style={{display:'flex',flexDirection:'column',height:'calc(100vh - 54px)',overflow:'hidden'}}>
+        {/* ACTION BAR — shown on mobile below header */}
+        <div className="mobile-action-bar" style={{display:'none',alignItems:'center',gap:12,padding:'8px 16px',borderBottom:'1px solid #2a2d36',background:'#13151a',flexShrink:0}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:7,color:'#9098aa',letterSpacing:2}}>
+              {isActive ? `ROW ${(run?.currentRow||0)+1} / 8` : isDead ? 'ELIMINATED' : isCashed ? 'SECURED' : 'READY'}
+            </div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:isActive?'#fff':isDead?'#ff5555':'#4dc94d',letterSpacing:1}}>
+              {isActive ? `${nextPayout} PTS` : (run?.secured||0) > 0 ? `+${run.secured} PTS` : '—'}
+            </div>
+          </div>
+          {!run || isDead || isCashed ? (
+            <button className="btn-red" onClick={startRun} style={{padding:'10px 24px',background:'#CC0000',border:'none',color:'#fff',fontSize:11,letterSpacing:3,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer',flexShrink:0}}>
+              {!run ? 'START' : 'NEW RUN'}
+            </button>
+          ) : (
+            <button className="btn-gold" onClick={cashOut} disabled={!canCash} style={{padding:'10px 24px',background:canCash?'#D4AF37':'#1e2230',border:`1px solid ${canCash?'#D4AF37':'#2e3240'}`,color:canCash?'#000':'#5a6070',fontSize:11,letterSpacing:3,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:canCash?'pointer':'not-allowed',flexShrink:0}}>
+              CASH OUT
+            </button>
+          )}
+        </div>
+        <div className="game-layout" style={{display:'flex',flex:1,overflow:'hidden',minHeight:0}}>
 
           {/* LEFT SIDEBAR — hidden on mobile */}
           <aside className="desktop-sidebar" style={{width:180,borderRight:'1px solid #252830',padding:18,display:'flex',flexDirection:'column',gap:16,flexShrink:0,overflowY:'auto'}}>
@@ -513,9 +522,9 @@ function App() {
             )}
 
             {run && (() => {
-              // Calculate tile size so all 9 rows fit perfectly in the available height
-              const bottomBarH = window.innerWidth <= 700 ? 60 : 0;
-              const availH = (boardRef.current ? boardRef.current.clientHeight : window.innerHeight - 54) - bottomBarH - (isDead||isCashed ? 52 : 0) - 16;
+              // Calculate tile size so all 9 rows fit perfectly
+              const actionBarH = window.innerWidth <= 700 ? 54 : 0;
+              const availH = (boardRef.current ? boardRef.current.clientHeight : window.innerHeight - 108) - actionBarH - (isDead||isCashed ? 44 : 0) - 16;
               const sz = Math.floor(availH / 9);
               return (
                 <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',height:'100%',padding:'8px 12px',boxSizing:'border-box'}}>
@@ -610,6 +619,8 @@ function App() {
             </div>
           </aside>
         </div>
+        </div>
+      </div>
       )}
 
       {/* SHOP TAB */}
@@ -704,27 +715,6 @@ function App() {
           </div>
         </div>
       )}
-
-      {/* MOBILE BOTTOM BAR */}
-      <div className="mobile-bottom-bar">
-        <div style={{flex:1}}>
-          <div style={{fontSize:8,color:'#9098aa',letterSpacing:2}}>
-            {isActive ? `ROW ${(run?.currentRow||0)+1} / 8` : isDead ? 'ELIMINATED' : isCashed ? 'SECURED' : 'READY'}
-          </div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:isActive?'#fff':isDead?'#ff5555':'#4dc94d',letterSpacing:1}}>
-            {isActive ? `${nextPayout} PTS` : (run?.secured||0) > 0 ? `+${run.secured} PTS` : '—'}
-          </div>
-        </div>
-        {!run || isDead || isCashed ? (
-          <button className="btn-red" onClick={startRun} style={{padding:'12px 28px',background:'#CC0000',border:'none',color:'#fff',fontSize:12,letterSpacing:3,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer',flexShrink:0}}>
-            {!run ? 'START' : 'NEW RUN'}
-          </button>
-        ) : (
-          <button className="btn-gold" onClick={cashOut} disabled={!canCash} style={{padding:'12px 28px',background:canCash?'#D4AF37':'#1e2230',border:`1px solid ${canCash?'#D4AF37':'#2e3240'}`,color:canCash?'#000':'#5a6070',fontSize:12,letterSpacing:3,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:canCash?'pointer':'not-allowed',flexShrink:0}}>
-            CASH OUT
-          </button>
-        )}
-      </div>
 
       <div style={{position:'fixed',bottom:0,left:0,right:0,height:3,background:'linear-gradient(90deg,transparent,#CC0000 30%,#CC0000 70%,transparent)',zIndex:50}}/>
     </div>
