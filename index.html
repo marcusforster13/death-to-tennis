@@ -343,7 +343,10 @@ function App() {
     setRun(generateRun());
     setShowBox(false);
     setTab('game');
-    setTimeout(()=>boardRef.current?.scrollTo({top:0,behavior:'smooth'}),100);
+    setTimeout(()=>{
+      const el = boardRef.current;
+      if(el) el.scrollTop = el.scrollHeight;
+    }, 150);
   },[]);
 
   const clickTile = useCallback((rowIdx, tileId)=>{
@@ -507,7 +510,7 @@ function App() {
             )}
 
             {run && (
-              <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',justifyContent:'flex-end',minHeight:'100%',padding:'16px 16px 20px'}} className="board-inner">
+              <div style={{width:'100%',maxWidth:560,display:'flex',flexDirection:'column',padding:'16px 16px 20px'}} className="board-inner">
 
                 {/* Status banner at top */}
                 {(isDead||isCashed) && (
