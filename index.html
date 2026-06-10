@@ -351,8 +351,22 @@ function PayPalButtonContainer({ pkg, onSuccess }) {
     document.body.appendChild(script);
   }, [pkg.id]);
 
-  if (error) return <div style={{padding:'12px',background:'rgba(204,0,0,0.1)',border:'1px solid rgba(204,0,0,0.4)',borderRadius:4,fontSize:9,color:'#ff6666',letterSpacing:1,textAlign:'center',marginBottom:10}}>{error}</div>;
-  if (loading) return <div style={{padding:'18px',textAlign:'center',color:'#9098aa',fontSize:9,letterSpacing:2,marginBottom:10}}>CARREGANDO PAYPAL…</div>;
+  if (error) return (
+    <div style={{marginBottom:10}}>
+      <div style={{padding:'10px',background:'rgba(204,0,0,0.1)',border:'1px solid rgba(204,0,0,0.4)',borderRadius:4,fontSize:9,color:'#ff6666',letterSpacing:1,textAlign:'center',marginBottom:8}}>{error}</div>
+      <a href={`https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${PAYPAL_CLIENT_ID}&item_name=${encodeURIComponent(`The Final Vision — ${pkg.label} Pack`)}&amount=${pkg.price.toFixed(2)}&currency_code=USD`} target="_blank" style={{display:'block',width:'100%',padding:'14px',background:'#003087',color:'#fff',fontSize:12,letterSpacing:2,fontFamily:"'Bebas Neue',sans-serif",borderRadius:5,cursor:'pointer',textAlign:'center',textDecoration:'none',boxSizing:'border-box'}}>
+        PAY WITH PAYPAL — ${pkg.price.toFixed(2)}
+      </a>
+    </div>
+  );
+  if (loading) return (
+    <div style={{marginBottom:10}}>
+      <div style={{padding:'12px',textAlign:'center',color:'#9098aa',fontSize:9,letterSpacing:2,marginBottom:8}}>LOADING PAYPAL…</div>
+      <a href={`https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${PAYPAL_CLIENT_ID}&item_name=${encodeURIComponent(`The Final Vision — ${pkg.label} Pack`)}&amount=${pkg.price.toFixed(2)}&currency_code=USD`} target="_blank" style={{display:'block',width:'100%',padding:'14px',background:'#003087',color:'#fff',fontSize:12,letterSpacing:2,fontFamily:"'Bebas Neue',sans-serif",borderRadius:5,cursor:'pointer',textAlign:'center',textDecoration:'none',boxSizing:'border-box'}}>
+        PAY WITH PAYPAL — ${pkg.price.toFixed(2)}
+      </a>
+    </div>
+  );
   return <div ref={containerRef} style={{marginBottom:10}} />;
 }
 
