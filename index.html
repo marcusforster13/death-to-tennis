@@ -318,56 +318,18 @@ function DeathBoxOverlay({onClose}) {
 const PAYPAL_CLIENT_ID = 'AeESC7dHd1MOZBlhq_V_fofdI1-wJXf2gGN8_rBu7-jv6HXPyrs2mKrp53wWfcCkV53A1ZtVdE7BTos3';
 
 // ─── PAYPAL BUTTON CONTAINER ──────────────────────────────────────────────────
-function PayPalButtonContainer({ pkg, onSuccess }) {
-  const containerRef = React.useRef(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
-
-  React.useEffect(() => {
-    // Remove any previously injected PayPal SDK to allow re-init with same client-id
-    const existing = document.getElementById('paypal-sdk');
-    if (existing) existing.remove();
-    if (window.paypal) delete window.paypal;
-
-    const script = document.createElement('script');
-    script.id = 'paypal-sdk';
-    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
-    script.onload = () => {
-      setLoading(false);
-      if (!containerRef.current) return;
-      window.paypal.Buttons({
-        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay' },
-        createOrder: (data, actions) => actions.order.create({
-          purchase_units: [{
-            description: `The Final Vision — ${pkg.label} Pack (${pkg.pts} PTS)`,
-            amount: { value: pkg.price.toFixed(2), currency_code: 'USD' },
-          }],
-        }),
-        onApprove: (data, actions) => actions.order.capture().then(() => onSuccess()),
-        onError: () => setError('Erro ao processar pagamento. Tente novamente.'),
-      }).render(containerRef.current);
-    };
-    script.onerror = () => setError('Falha ao carregar PayPal. Verifique sua conexão.');
-    document.body.appendChild(script);
-  }, [pkg.id]);
-
-  if (error) return (
-    <div style={{marginBottom:10}}>
-      <div style={{padding:'10px',background:'rgba(204,0,0,0.1)',border:'1px solid rgba(204,0,0,0.4)',borderRadius:4,fontSize:9,color:'#ff6666',letterSpacing:1,textAlign:'center',marginBottom:8}}>{error}</div>
-      <a href={`https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${PAYPAL_CLIENT_ID}&item_name=${encodeURIComponent(`The Final Vision — ${pkg.label} Pack`)}&amount=${pkg.price.toFixed(2)}&currency_code=USD`} target="_blank" style={{display:'block',width:'100%',padding:'14px',background:'#003087',color:'#fff',fontSize:12,letterSpacing:2,fontFamily:"'Bebas Neue',sans-serif",borderRadius:5,cursor:'pointer',textAlign:'center',textDecoration:'none',boxSizing:'border-box'}}>
-        PAY WITH PAYPAL — ${pkg.price.toFixed(2)}
-      </a>
-    </div>
+function PayPalButtonContainer({ pkg, onSuccess, playerId }) {
+  const PAYPAL_EMAIL = 'AeESC7dHd1MOZBlhq_V_fofdI1-wJXf2gGN8_rBu7-jv6HXPyrs2mKrp53wWfcCkV53A1ZtVdE7BTos3';
+  const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${PAYPAL_EMAIL}&item_name=${encodeURIComponent('The Final Vision — ' + pkg.label + ' Pack (' + pkg.pts + ' PTS)')}&amount=${pkg.price.toFixed(2)}&currency_code=USD&custom=${encodeURIComponent(playerId)}&return=${encodeURIComponent(window.location.href)}&cancel_return=${encodeURIComponent(window.location.href)}`;
+  return (
+    <a href={url} target="_blank" onClick={onSuccess}
+      style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,width:'100%',padding:'15px',marginBottom:10,background:'#003087',color:'#fff',fontSize:12,letterSpacing:2,fontFamily:"'Bebas Neue',sans-serif",borderRadius:5,cursor:'pointer',textDecoration:'none',boxSizing:'border-box',transition:'background 0.15s'}}
+      onMouseEnter={e=>e.currentTarget.style.background='#0041be'}
+      onMouseLeave={e=>e.currentTarget.style.background='#003087'}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M20.067 8.478c.492.315.844.825.983 1.39.09.37.124.755.103 1.14-.24 4.317-3.18 5.81-7.13 5.81H13.7l-.66 4.17H10.8l-.05.31a.378.378 0 01-.37.32H7.83a.32.32 0 01-.316-.37l1.37-8.69.11-.7h3.65c4.5 0 7.11-1.79 7.42-5.37zM7.5 6h5.25c.84 0 1.64.07 2.36.21-.46 3.01-2.59 4.63-6.23 4.63H6.67l1.27-4.84H7.5zm9.58-2.44C16.55 1.36 14.62.5 12 .5H4.83a.63.63 0 00-.62.53L1.03 18.1a.38.38 0 00.374.44h3.46l.87-5.51-.07.44h3.1c4.44 0 7.9-1.8 8.9-7.01.04-.18.06-.36.08-.54a4.1 4.1 0 00-.66-2.36z"/></svg>
+      PAY WITH PAYPAL — ${pkg.price.toFixed(2)}
+    </a>
   );
-  if (loading) return (
-    <div style={{marginBottom:10}}>
-      <div style={{padding:'12px',textAlign:'center',color:'#9098aa',fontSize:9,letterSpacing:2,marginBottom:8}}>LOADING PAYPAL…</div>
-      <a href={`https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${PAYPAL_CLIENT_ID}&item_name=${encodeURIComponent(`The Final Vision — ${pkg.label} Pack`)}&amount=${pkg.price.toFixed(2)}&currency_code=USD`} target="_blank" style={{display:'block',width:'100%',padding:'14px',background:'#003087',color:'#fff',fontSize:12,letterSpacing:2,fontFamily:"'Bebas Neue',sans-serif",borderRadius:5,cursor:'pointer',textAlign:'center',textDecoration:'none',boxSizing:'border-box'}}>
-        PAY WITH PAYPAL — ${pkg.price.toFixed(2)}
-      </a>
-    </div>
-  );
-  return <div ref={containerRef} style={{marginBottom:10}} />;
 }
 
 // ─── CREDIT PACKAGES ──────────────────────────────────────────────────────────
@@ -379,7 +341,7 @@ const CREDIT_PACKAGES = [
 ];
 
 // ─── CREDITS MODAL ─────────────────────────────────────────────────────────────
-function CreditsModal({ onClose, currentPoints }) {
+function CreditsModal({ onClose, currentPoints, playerId }) {
   const [selected, setSelected] = useState('p2');
   const [step, setStep] = useState(1); // 1 = choose, 2 = confirm
 
@@ -483,7 +445,7 @@ function CreditsModal({ onClose, currentPoints }) {
               <div style={{fontSize:9,color:'#a0a8b8',lineHeight:1.6}}>After payment is confirmed on PayPal, your points will be credited manually within 24h. Keep your receipt.</div>
             </div>
 
-            <PayPalButtonContainer pkg={pkg} onSuccess={handlePayPal} />
+            <PayPalButtonContainer pkg={pkg} onSuccess={handlePayPal} playerId={playerId} />
             <button onClick={() => setStep(1)} style={{width:'100%',padding:'10px',background:'none',border:'1px solid #2a2d36',color:'#9098aa',fontSize:9,letterSpacing:2,fontFamily:'inherit',borderRadius:4,cursor:'pointer'}}>
               ← VOLTAR
             </button>
@@ -516,6 +478,28 @@ function App() {
   const [showBox, setShowBox] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState(null);
+  const [availableRuns, setAvailableRuns] = useState(0);
+  const [loadingRuns, setLoadingRuns] = useState(true);
+  const [noRunsMsg, setNoRunsMsg] = useState(false);
+
+  // Stable player ID stored in localStorage
+  const playerId = React.useMemo(() => {
+    let id = localStorage.getItem('tfv_player_id');
+    if (!id) { id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2); localStorage.setItem('tfv_player_id', id); }
+    return id;
+  }, []);
+
+  const fetchRuns = useCallback(async () => {
+    setLoadingRuns(true);
+    try {
+      const r = await fetch(`/api/runs?player_id=${encodeURIComponent(playerId)}`);
+      const data = await r.json();
+      setAvailableRuns(data.runs || 0);
+    } catch(e) { setAvailableRuns(0); }
+    setLoadingRuns(false);
+  }, [playerId]);
+
+  useEffect(() => { fetchRuns(); }, [fetchRuns]);
   const boardRef = useRef(null);
   const [, forceUpdate] = useState(0);
   useEffect(()=>{
@@ -526,15 +510,24 @@ function App() {
 
   useEffect(()=>saveState(pState),[pState]);
 
-  const startRun = useCallback(()=>{
+  const startRun = useCallback(async ()=>{
+    if (availableRuns < 1) { setNoRunsMsg(true); return; }
+    // Deduct 1 run
+    try {
+      const r = await fetch('/api/runs', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ player_id: playerId, action: 'use' })
+      });
+      if (!r.ok) { setNoRunsMsg(true); return; }
+      setAvailableRuns(prev => prev - 1);
+    } catch(e) { setNoRunsMsg(true); return; }
     setRun(generateRun());
     setShowBox(false);
+    setNoRunsMsg(false);
     setTab('game');
-    setTimeout(()=>{
-      const el = boardRef.current;
-      if(el) el.scrollTop = el.scrollHeight;
-    }, 150);
-  },[]);
+    setTimeout(()=>{ const el = boardRef.current; if(el) el.scrollTop = el.scrollHeight; }, 150);
+  },[availableRuns, playerId]);
 
   const clickTile = useCallback((rowIdx, tileId)=>{
     setRun(prev=>{
@@ -615,7 +608,7 @@ function App() {
   return (
     <div style={{minHeight:'100vh',background:'#13151a'}}>
       {showBox && <DeathBoxOverlay onClose={()=>setShowBox(false)}/>}
-      {showCredits && <CreditsModal onClose={()=>setShowCredits(false)} currentPoints={pState.points}/>}
+      {showCredits && <CreditsModal onClose={()=>{setShowCredits(false);fetchRuns();}} currentPoints={pState.points} playerId={playerId}/>}
 
       {/* TOP BAR */}
       <header style={{height:54,borderBottom:'1px solid #2a2d36',display:'flex',alignItems:'center',padding:'0 16px',gap:16,position:'fixed',top:0,left:0,right:0,background:'#13151a',zIndex:40}}>
@@ -637,8 +630,8 @@ function App() {
         </div>
         <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:16}}>
           <div>
-            <div style={{fontSize:7,color:'#9098aa',letterSpacing:2}}>BALANCE</div>
-            <div className="header-mobile-pts" style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:'#D4AF37',letterSpacing:1}}>{pState.points.toLocaleString()} PTS</div>
+            <div style={{fontSize:7,color:'#9098aa',letterSpacing:2}}>RUNS LEFT</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:availableRuns>0?'#4dc94d':'#ff5555',letterSpacing:1}}>{loadingRuns?'…':availableRuns}</div>
           </div>
           <div style={{width:1,height:28,background:'#252830'}}/>
           <div>
@@ -717,10 +710,21 @@ function App() {
                 <img src={SKULL_IMG} alt="skull" style={{width:120,height:'auto',marginBottom:8,opacity:0.85,display:'block',marginLeft:'auto',marginRight:'auto'}}/>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:42,letterSpacing:5,marginBottom:6}}>THE FINAL VISION</div>
                 <div style={{color:'#9098aa',fontSize:10,letterSpacing:3,marginBottom:12}}>SURVIVE 8 ROWS</div>
-                <div style={{color:'#CC0000',fontSize:10,letterSpacing:2,marginBottom:40}}>CLAIM THE DEATH BOX</div>
-                <button className="btn-red" onClick={startRun} style={{padding:'15px 60px',background:'#CC0000',border:'none',color:'#fff',fontSize:14,letterSpacing:4,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer'}}>
-                  START RUN
-                </button>
+                <div style={{color:'#CC0000',fontSize:10,letterSpacing:2,marginBottom:24}}>CLAIM THE DEATH BOX</div>
+                {noRunsMsg && (
+                  <div style={{marginBottom:20,padding:'10px 20px',background:'rgba(204,0,0,0.12)',border:'1px solid rgba(204,0,0,0.4)',borderRadius:4,fontSize:10,color:'#ff6666',letterSpacing:1}}>
+                    NO RUNS AVAILABLE — BUY MORE TO PLAY
+                  </div>
+                )}
+                {availableRuns > 0 ? (
+                  <button className="btn-red" onClick={startRun} style={{padding:'15px 60px',background:'#CC0000',border:'none',color:'#fff',fontSize:14,letterSpacing:4,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer'}}>
+                    START RUN ({availableRuns} LEFT)
+                  </button>
+                ) : (
+                  <button className="btn-red" onClick={()=>setShowCredits(true)} style={{padding:'15px 60px',background:'#CC0000',border:'none',color:'#fff',fontSize:14,letterSpacing:4,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer'}}>
+                    BUY RUNS TO PLAY
+                  </button>
+                )}
               </div>
             )}
 
