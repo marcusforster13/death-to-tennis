@@ -314,12 +314,194 @@ function DeathBoxOverlay({onClose}) {
   );
 }
 
+// ─── PAYPAL CLIENT ID ─────────────────────────────────────────────────────────
+const PAYPAL_CLIENT_ID = 'AeESC7dHd1MOZBlhq_V_fofdI1-wJXf2gGN8_rBu7-jv6HXPyrs2mKrp53wWfcCkV53A1ZtVdE7BTos3';
+
+// ─── PAYPAL BUTTON CONTAINER ──────────────────────────────────────────────────
+function PayPalButtonContainer({ pkg, onSuccess }) {
+  const containerRef = React.useRef(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    // Remove any previously injected PayPal SDK to allow re-init with same client-id
+    const existing = document.getElementById('paypal-sdk');
+    if (existing) existing.remove();
+    if (window.paypal) delete window.paypal;
+
+    const script = document.createElement('script');
+    script.id = 'paypal-sdk';
+    script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
+    script.onload = () => {
+      setLoading(false);
+      if (!containerRef.current) return;
+      window.paypal.Buttons({
+        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'pay' },
+        createOrder: (data, actions) => actions.order.create({
+          purchase_units: [{
+            description: `The Final Vision — ${pkg.label} Pack (${pkg.pts} PTS)`,
+            amount: { value: pkg.price.toFixed(2), currency_code: 'USD' },
+          }],
+        }),
+        onApprove: (data, actions) => actions.order.capture().then(() => onSuccess()),
+        onError: () => setError('Erro ao processar pagamento. Tente novamente.'),
+      }).render(containerRef.current);
+    };
+    script.onerror = () => setError('Falha ao carregar PayPal. Verifique sua conexão.');
+    document.body.appendChild(script);
+  }, [pkg.id]);
+
+  if (error) return <div style={{padding:'12px',background:'rgba(204,0,0,0.1)',border:'1px solid rgba(204,0,0,0.4)',borderRadius:4,fontSize:9,color:'#ff6666',letterSpacing:1,textAlign:'center',marginBottom:10}}>{error}</div>;
+  if (loading) return <div style={{padding:'18px',textAlign:'center',color:'#9098aa',fontSize:9,letterSpacing:2,marginBottom:10}}>CARREGANDO PAYPAL…</div>;
+  return <div ref={containerRef} style={{marginBottom:10}} />;
+}
+
+// ─── CREDIT PACKAGES ──────────────────────────────────────────────────────────
+const CREDIT_PACKAGES = [
+  { id: 'p1', pts: 500,  price: 5.00,  label: 'STARTER',  popular: false, bonus: '' },
+  { id: 'p2', pts: 1200, price: 10.00, label: 'PLUS',     popular: true,  bonus: '+200 BONUS' },
+  { id: 'p3', pts: 2800, price: 20.00, label: 'PRO',      popular: false, bonus: '+800 BONUS' },
+  { id: 'p4', pts: 6500, price: 50.00, label: 'ELITE',    popular: false, bonus: '+2500 BONUS' },
+];
+
+// ─── CREDITS MODAL ─────────────────────────────────────────────────────────────
+function CreditsModal({ onClose, currentPoints }) {
+  const [selected, setSelected] = useState('p2');
+  const [step, setStep] = useState(1); // 1 = choose, 2 = confirm
+
+  const pkg = CREDIT_PACKAGES.find(p => p.id === selected);
+
+  function handlePayPal() {
+    setStep(3);
+  }
+
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.88)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',animation:'fadeIn 0.25s ease',padding:16}}>
+      <div style={{width:'100%',maxWidth:480,background:'#15181f',border:'1px solid #2a2d36',borderRadius:8,overflow:'hidden',boxShadow:'0 24px 80px rgba(0,0,0,0.7)'}}>
+
+        {/* Header */}
+        <div style={{padding:'20px 24px 16px',borderBottom:'1px solid #1e2230',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:4,color:'#fff'}}>ADD CREDITS</div>
+            <div style={{fontSize:9,color:'#9098aa',letterSpacing:2,marginTop:1}}>CURRENT BALANCE: <span style={{color:'#D4AF37'}}>{currentPoints.toLocaleString()} PTS</span></div>
+          </div>
+          <button onClick={onClose} style={{background:'none',border:'none',color:'#666',fontSize:20,cursor:'pointer',padding:'4px 8px',lineHeight:1}}>✕</button>
+        </div>
+
+        {step === 1 && (
+          <div style={{padding:'20px 24px'}}>
+            {/* Packages grid */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:20}}>
+              {CREDIT_PACKAGES.map(p => {
+                const isSel = selected === p.id;
+                return (
+                  <div key={p.id} onClick={() => setSelected(p.id)} style={{
+                    border:`2px solid ${isSel ? '#CC0000' : p.popular ? '#444' : '#2a2d36'}`,
+                    borderRadius:6, padding:'14px 14px 12px',
+                    background: isSel ? 'rgba(204,0,0,0.1)' : p.popular ? '#1a1d26' : '#191c24',
+                    cursor:'pointer', position:'relative', transition:'all 0.15s',
+                    boxShadow: isSel ? '0 0 16px rgba(204,0,0,0.3)' : 'none',
+                  }}>
+                    {p.popular && (
+                      <div style={{position:'absolute',top:-10,left:'50%',transform:'translateX(-50%)',background:'#CC0000',color:'#fff',fontSize:7,letterSpacing:2,padding:'2px 10px',borderRadius:3,fontWeight:700}}>MOST POPULAR</div>
+                    )}
+                    <div style={{fontSize:8,color: isSel ? '#ff6666' : '#9098aa',letterSpacing:2,fontWeight:700,marginBottom:4}}>{p.label}</div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:30,color: isSel ? '#fff' : '#c0c8d8',letterSpacing:2,lineHeight:1}}>{p.pts.toLocaleString()}</div>
+                    <div style={{fontSize:8,color:'#9098aa',letterSpacing:1,marginBottom:8}}>POINTS</div>
+                    {p.bonus && (
+                      <div style={{fontSize:7,color:'#4dc94d',letterSpacing:1,fontWeight:700,marginBottom:6}}>{p.bonus}</div>
+                    )}
+                    <div style={{fontSize:13,fontWeight:700,color: isSel ? '#fff' : '#b0b8c8'}}>${p.price.toFixed(2)}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Selected summary */}
+            <div style={{padding:'12px 16px',background:'#1a1d26',border:'1px solid #2a2d36',borderRadius:5,marginBottom:16,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <div>
+                <div style={{fontSize:8,color:'#9098aa',letterSpacing:2}}>YOU WILL RECEIVE</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:'#D4AF37',letterSpacing:2,marginTop:2}}>{pkg.pts.toLocaleString()} PTS {pkg.bonus && <span style={{fontSize:12,color:'#4dc94d'}}>+BONUS</span>}</div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize:8,color:'#9098aa',letterSpacing:2}}>TOTAL</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:'#fff',letterSpacing:1}}>${pkg.price.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <button onClick={() => setStep(2)} style={{
+              width:'100%', padding:'14px', background:'#CC0000', border:'none',
+              color:'#fff', fontSize:13, letterSpacing:3,
+              fontFamily:"'Bebas Neue',sans-serif", borderRadius:5,
+              cursor:'pointer', transition:'all 0.15s',
+            }}
+              onMouseEnter={e=>e.target.style.background='#e60000'}
+              onMouseLeave={e=>e.target.style.background='#CC0000'}>
+              CONTINUE TO PAYMENT
+            </button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div style={{padding:'24px'}}>
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:9,color:'#9098aa',letterSpacing:2,marginBottom:14}}>ORDER SUMMARY</div>
+              <div style={{border:'1px solid #2a2d36',borderRadius:5,overflow:'hidden'}}>
+                <div style={{display:'flex',justifyContent:'space-between',padding:'12px 16px',borderBottom:'1px solid #1e2230'}}>
+                  <span style={{fontSize:10,color:'#c0c8d8',letterSpacing:1}}>{pkg.label} PACK</span>
+                  <span style={{fontSize:10,color:'#9098aa'}}>{pkg.pts.toLocaleString()} PTS</span>
+                </div>
+                {pkg.bonus && (
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid #1e2230',background:'rgba(77,201,77,0.05)'}}>
+                    <span style={{fontSize:9,color:'#4dc94d',letterSpacing:1}}>BONUS CREDITS</span>
+                    <span style={{fontSize:9,color:'#4dc94d'}}>{pkg.bonus}</span>
+                  </div>
+                )}
+                <div style={{display:'flex',justifyContent:'space-between',padding:'14px 16px',background:'#1a1d26'}}>
+                  <span style={{fontSize:11,color:'#fff',fontWeight:600,letterSpacing:1}}>TOTAL</span>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:'#fff',letterSpacing:1}}>${pkg.price.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{marginBottom:16,padding:'10px 14px',background:'rgba(255,185,0,0.06)',border:'1px solid rgba(255,185,0,0.15)',borderRadius:4}}>
+              <div style={{fontSize:8,color:'#e0b030',letterSpacing:2,marginBottom:3}}>ℹ AFTER PAYMENT</div>
+              <div style={{fontSize:9,color:'#a0a8b8',lineHeight:1.6}}>After payment is confirmed on PayPal, your points will be credited manually within 24h. Keep your receipt.</div>
+            </div>
+
+            <PayPalButtonContainer pkg={pkg} onSuccess={handlePayPal} />
+            <button onClick={() => setStep(1)} style={{width:'100%',padding:'10px',background:'none',border:'1px solid #2a2d36',color:'#9098aa',fontSize:9,letterSpacing:2,fontFamily:'inherit',borderRadius:4,cursor:'pointer'}}>
+              ← VOLTAR
+            </button>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div style={{padding:'40px 24px',textAlign:'center'}}>
+            <div style={{fontSize:48,marginBottom:12}}>🎉</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:4,color:'#4dc94d',marginBottom:8}}>PAGAMENTO INICIADO</div>
+            <div style={{fontSize:10,color:'#a0a8b8',letterSpacing:1,lineHeight:1.8,marginBottom:24}}>
+              The PayPal window has opened.<br/>
+              After confirmation, your <span style={{color:'#D4AF37',fontWeight:700}}>{pkg.pts.toLocaleString()} PTS</span> will be credited within 24h.
+            </div>
+            <button onClick={onClose} style={{padding:'12px 40px',background:'#CC0000',border:'none',color:'#fff',fontSize:11,letterSpacing:3,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer'}}>
+              FECHAR
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 function App() {
   const [pState, setPState] = useState(loadState);
   const [run, setRun] = useState(null);
   const [tab, setTab] = useState('game');
   const [showBox, setShowBox] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
+  const [selectedPkg, setSelectedPkg] = useState(null);
   const boardRef = useRef(null);
   const [, forceUpdate] = useState(0);
   useEffect(()=>{
@@ -419,6 +601,7 @@ function App() {
   return (
     <div style={{minHeight:'100vh',background:'#13151a'}}>
       {showBox && <DeathBoxOverlay onClose={()=>setShowBox(false)}/>}
+      {showCredits && <CreditsModal onClose={()=>setShowCredits(false)} currentPoints={pState.points}/>}
 
       {/* TOP BAR */}
       <header style={{height:54,borderBottom:'1px solid #2a2d36',display:'flex',alignItems:'center',padding:'0 16px',gap:16,position:'fixed',top:0,left:0,right:0,background:'#13151a',zIndex:40}}>
@@ -448,6 +631,12 @@ function App() {
             <div style={{fontSize:7,color:'#9098aa',letterSpacing:2}}>RUNS</div>
             <div style={{fontSize:12,color:'#b0b8c8'}}>{pState.runs}</div>
           </div>
+          <div style={{width:1,height:28,background:'#252830'}}/>
+          <button onClick={()=>setShowCredits(true)} style={{padding:'6px 14px',background:'#CC0000',border:'none',color:'#fff',fontSize:9,letterSpacing:2,fontFamily:"'Bebas Neue',sans-serif",borderRadius:3,cursor:'pointer',transition:'all 0.15s',flexShrink:0}}
+            onMouseEnter={e=>e.target.style.background='#e60000'}
+            onMouseLeave={e=>e.target.style.background='#CC0000'}>
+            + ADD CREDITS
+          </button>
         </div>
       </header>
 
