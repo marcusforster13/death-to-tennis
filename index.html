@@ -319,9 +319,8 @@ const PAYPAL_CLIENT_ID = 'AeESC7dHd1MOZBlhq_V_fofdI1-wJXf2gGN8_rBu7-jv6HXPyrs2mK
 
 // ─── PAYPAL BUTTON CONTAINER ──────────────────────────────────────────────────
 function PayPalButtonContainer({ pkg, onSuccess, playerId }) {
-  const PAYPAL_EMAIL = 'oxocubejoe@gmail.com';
-  const note = encodeURIComponent(`The Final Vision - ${pkg.label} Pack - Player: ${playerId}`);
-  const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${PAYPAL_EMAIL}&item_name=${note}&amount=${pkg.price.toFixed(2)}&currency_code=USD&custom=${encodeURIComponent(playerId)}&return=${encodeURIComponent(window.location.href)}&cancel_return=${encodeURIComponent(window.location.href)}`;
+  const PAYPAL_EMAIL = 'AeESC7dHd1MOZBlhq_V_fofdI1-wJXf2gGN8_rBu7-jv6HXPyrs2mKrp53wWfcCkV53A1ZtVdE7BTos3';
+  const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${PAYPAL_EMAIL}&item_name=${encodeURIComponent('The Final Vision — ' + pkg.label + ' Pack (' + pkg.pts + ' PTS)')}&amount=${pkg.price.toFixed(2)}&currency_code=USD&custom=${encodeURIComponent(playerId)}&return=${encodeURIComponent(window.location.href)}&cancel_return=${encodeURIComponent(window.location.href)}`;
   return (
     <a href={url} target="_blank" onClick={onSuccess}
       style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,width:'100%',padding:'15px',marginBottom:10,background:'#003087',color:'#fff',fontSize:12,letterSpacing:2,fontFamily:"'Bebas Neue',sans-serif",borderRadius:5,cursor:'pointer',textDecoration:'none',boxSizing:'border-box',transition:'background 0.15s'}}
@@ -471,6 +470,66 @@ function CreditsModal({ onClose, currentPoints, playerId }) {
   );
 }
 
+// ─── LOGIN / REGISTER SCREEN ──────────────────────────────────────────────────
+function AuthScreen({ onAuth }) {
+  const [mode, setMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    if (!email || !password) { setError('Fill in all fields'); return; }
+    setLoading(true); setError('');
+    try {
+      const r = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: mode, email, password })
+      });
+      const data = await r.json();
+      if (!r.ok) { setError(data.error || 'Error'); setLoading(false); return; }
+      localStorage.setItem('tfv_player_id', data.player_id);
+      localStorage.setItem('tfv_email', email);
+      onAuth(data.player_id);
+    } catch(e) { setError('Connection error'); }
+    setLoading(false);
+  }
+
+  const inputStyle = { width:'100%', padding:'11px 14px', background:'#1a1d26', border:'1px solid #2a2d36', borderRadius:4, color:'#fff', fontSize:11, letterSpacing:1, outline:'none', boxSizing:'border-box', fontFamily:'inherit' };
+
+  return (
+    <div style={{minHeight:'100vh',background:'#0d0f14',display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+      <div style={{width:'100%',maxWidth:380,background:'#15181f',border:'1px solid #2a2d36',borderRadius:8,overflow:'hidden',boxShadow:'0 24px 80px rgba(0,0,0,0.7)'}}>
+        <div style={{padding:'32px 28px 24px',textAlign:'center',borderBottom:'1px solid #1e2230'}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:36,letterSpacing:6,color:'#fff',marginBottom:4}}>THE FINAL VISION</div>
+          <div style={{fontSize:9,color:'#9098aa',letterSpacing:3}}>{mode === 'login' ? 'SIGN IN TO PLAY' : 'CREATE YOUR ACCOUNT'}</div>
+        </div>
+        <div style={{padding:'24px 28px'}}>
+          {error && <div style={{marginBottom:14,padding:'8px 12px',background:'rgba(204,0,0,0.1)',border:'1px solid rgba(204,0,0,0.3)',borderRadius:4,fontSize:9,color:'#ff6666',letterSpacing:1}}>{error}</div>}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:8,color:'#9098aa',letterSpacing:2,marginBottom:5}}>EMAIL</div>
+            <input style={inputStyle} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com" onKeyDown={e=>e.key==='Enter'&&handleSubmit()}/>
+          </div>
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:8,color:'#9098aa',letterSpacing:2,marginBottom:5}}>PASSWORD</div>
+            <input style={inputStyle} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==='Enter'&&handleSubmit()}/>
+          </div>
+          <button onClick={handleSubmit} disabled={loading} style={{width:'100%',padding:'13px',background:'#CC0000',border:'none',color:'#fff',fontSize:12,letterSpacing:3,fontFamily:"'Bebas Neue',sans-serif",borderRadius:4,cursor:'pointer',marginBottom:12}}>
+            {loading ? 'LOADING...' : mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
+          </button>
+          <div style={{textAlign:'center',fontSize:9,color:'#9098aa'}}>
+            {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+            <span onClick={()=>{setMode(mode==='login'?'register':'login');setError('');}} style={{color:'#CC0000',cursor:'pointer',letterSpacing:1}}>
+              {mode === 'login' ? 'REGISTER' : 'SIGN IN'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 function App() {
   const [pState, setPState] = useState(loadState);
@@ -482,13 +541,9 @@ function App() {
   const [availableRuns, setAvailableRuns] = useState(0);
   const [loadingRuns, setLoadingRuns] = useState(true);
   const [noRunsMsg, setNoRunsMsg] = useState(false);
+  const [playerId, setPlayerId] = useState(() => localStorage.getItem('tfv_player_id') || null);
 
-  // Stable player ID stored in localStorage
-  const playerId = React.useMemo(() => {
-    let id = localStorage.getItem('tfv_player_id');
-    if (!id) { id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2); localStorage.setItem('tfv_player_id', id); }
-    return id;
-  }, []);
+  if (!playerId) return <AuthScreen onAuth={(id) => setPlayerId(id)} />;
 
   const fetchRuns = useCallback(async () => {
     setLoadingRuns(true);
@@ -644,6 +699,9 @@ function App() {
             onMouseEnter={e=>e.target.style.background='#e60000'}
             onMouseLeave={e=>e.target.style.background='#CC0000'}>
             + ADD CREDITS
+          </button>
+          <button onClick={()=>{localStorage.removeItem('tfv_player_id');localStorage.removeItem('tfv_email');setPlayerId(null);}} style={{padding:'6px 12px',background:'none',border:'1px solid #2a2d36',color:'#9098aa',fontSize:9,letterSpacing:1,fontFamily:'inherit',borderRadius:3,cursor:'pointer',flexShrink:0}}>
+            LOGOUT
           </button>
         </div>
       </header>
