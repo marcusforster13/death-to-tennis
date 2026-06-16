@@ -478,7 +478,7 @@ function AuthScreen({ onAuth }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit() {
+async function handleSubmit() {
     if (!email || !password) { setError('Fill in all fields'); return; }
     setLoading(true); setError('');
     try {
@@ -492,7 +492,13 @@ function AuthScreen({ onAuth }) {
       localStorage.setItem('tfv_player_id', data.player_id);
       localStorage.setItem('tfv_email', email);
       onAuth(data.player_id);
-    } catch(e) { setError('Connection error'); }
+    } catch(e) {
+      // API not available yet — use email as local ID so player can still enter
+      const localId = email.toLowerCase().trim();
+      localStorage.setItem('tfv_player_id', localId);
+      localStorage.setItem('tfv_email', localId);
+      onAuth(localId);
+    }
     setLoading(false);
   }
 
