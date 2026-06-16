@@ -530,8 +530,15 @@ function AuthScreen({ onAuth }) {
   );
 }
 
+// ─── AUTH WRAPPER ─────────────────────────────────────────────────────────────
+function AppWrapper() {
+  const [playerId, setPlayerId] = useState(() => localStorage.getItem('tfv_player_id') || null);
+  if (!playerId) return <AuthScreen onAuth={(id) => setPlayerId(id)} />;
+  return <App playerId={playerId} onLogout={() => { localStorage.removeItem('tfv_player_id'); localStorage.removeItem('tfv_email'); setPlayerId(null); }} />;
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
-function App() {
+function App({ playerId, onLogout }) {
   const [pState, setPState] = useState(loadState);
   const [run, setRun] = useState(null);
   const [tab, setTab] = useState('game');
@@ -541,9 +548,6 @@ function App() {
   const [availableRuns, setAvailableRuns] = useState(0);
   const [loadingRuns, setLoadingRuns] = useState(true);
   const [noRunsMsg, setNoRunsMsg] = useState(false);
-  const [playerId, setPlayerId] = useState(() => localStorage.getItem('tfv_player_id') || null);
-
-  if (!playerId) return <AuthScreen onAuth={(id) => setPlayerId(id)} />;
 
   const fetchRuns = useCallback(async () => {
     setLoadingRuns(true);
@@ -700,7 +704,7 @@ function App() {
             onMouseLeave={e=>e.target.style.background='#CC0000'}>
             + ADD CREDITS
           </button>
-          <button onClick={()=>{localStorage.removeItem('tfv_player_id');localStorage.removeItem('tfv_email');setPlayerId(null);}} style={{padding:'6px 12px',background:'none',border:'1px solid #2a2d36',color:'#9098aa',fontSize:9,letterSpacing:1,fontFamily:'inherit',borderRadius:3,cursor:'pointer',flexShrink:0}}>
+          <button onClick={onLogout} style={{padding:'6px 12px',background:'none',border:'1px solid #2a2d36',color:'#9098aa',fontSize:9,letterSpacing:1,fontFamily:'inherit',borderRadius:3,cursor:'pointer',flexShrink:0}}>
             LOGOUT
           </button>
         </div>
@@ -986,7 +990,7 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+ReactDOM.createRoot(document.getElementById('root')).render(<AppWrapper/>);
 </script>
 </body>
 </html>
