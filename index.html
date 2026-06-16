@@ -320,7 +320,7 @@ const PAYPAL_CLIENT_ID = 'AeESC7dHd1MOZBlhq_V_fofdI1-wJXf2gGN8_rBu7-jv6HXPyrs2mK
 // ─── PAYPAL BUTTON CONTAINER ──────────────────────────────────────────────────
 function PayPalButtonContainer({ pkg, onSuccess, playerId }) {
   const PAYPAL_EMAIL = 'oxocubejoe@gmail.com';
-  const url = `https://www.paypal.me/oxocubejoe/${pkg.price.toFixed(2)}USD`;
+  const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${PAYPAL_EMAIL}&item_name=${encodeURIComponent('The Final Vision - ' + pkg.label + ' Pack - Player: ' + playerId)}&amount=${pkg.price.toFixed(2)}&currency_code=USD&custom=${encodeURIComponent(playerId)}&return=${encodeURIComponent(window.location.href)}&cancel_return=${encodeURIComponent(window.location.href)}`;
   return (
     <a href={url} target="_blank" onClick={onSuccess}
       style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,width:'100%',padding:'15px',marginBottom:10,background:'#003087',color:'#fff',fontSize:12,letterSpacing:2,fontFamily:"'Bebas Neue',sans-serif",borderRadius:5,cursor:'pointer',textDecoration:'none',boxSizing:'border-box',transition:'background 0.15s'}}
